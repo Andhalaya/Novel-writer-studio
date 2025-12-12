@@ -1,0 +1,20 @@
+.header-collapse-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #444;
+    padding: 6px;
+    margin-right: 12px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+  }
+  
+  .header-collapse-btn:hover {
+    background: rgba(0,0,0,0.08);
+  }
+  
+  .header-title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  
