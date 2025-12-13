@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Clock,
   Target,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import { useFirestore } from "../../context/FirestoreContext";
 import { useProject } from "../../context/ProjectContext";
@@ -25,6 +26,8 @@ function DashboardView() {
 
   const [chapters, setChapters] = useState([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   // Modal form state
   const [modalTitle, setModalTitle] = useState("");
@@ -57,7 +60,7 @@ function DashboardView() {
     const projectData = {
       title: modalTitle,
       status: modalStatus,
-      goalWordCount: Number(modalGoalWordCount) || 0,
+      goalWordCount: Number(modalGoalWordCount) || 80000,
       currentWordCount: 0,
       lastEdited: new Date().toISOString().slice(0, 10),
     };
@@ -91,6 +94,40 @@ function DashboardView() {
     setModalError("");
   };
 
+  const handleStatusChange = async (newStatus) => {
+    if (!currentProject) return;
+    
+    try {
+      await updateProject(currentProject.id, { status: newStatus });
+      await refreshProjects();
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
+  };
+
+  const handleDeleteClick = (project) => {
+    setProjectToDelete(project);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      await deleteProject(projectToDelete.id);
+      await refreshProjects();
+      setShowDeleteModal(false);
+      setProjectToDelete(null);
+      
+      // If we're deleting the current project, navigate to dashboard
+      if (currentProject?.id === projectToDelete.id) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Error deleting project:", err);
+    }
+  };
+
   // PROJECT DASHBOARD VIEW - Show when a project is selected
   if (currentProject) {
     const completedChapters = chapters.filter(c => c.status === "Complete" || c.status === "Completed").length;
@@ -107,9 +144,24 @@ function DashboardView() {
             <p className="page-subtitle">Overview & Analytics</p>
           </div>
           <div className="header-actions">
-            <span className={`project-status status-${currentProject.status?.toLowerCase().replace(" ", "")}`}>
-              {currentProject.status || "Planning"}
-            </span>
+            <select
+              className="status-select"
+              value={currentProject.status || "Planning"}
+              onChange={(e) => handleStatusChange(e.target.value)}
+            >
+              <option value="Planning">Planning</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Drafting">Drafting</option>
+              <option value="Completed">Completed</option>
+            </select>
+            
+            <button 
+              className="btn-delete"
+              onClick={() => handleDeleteClick(currentProject)}
+            >
+              <Trash2 size={16} />
+              Delete Project
+            </button>
           </div>
         </div>
 
@@ -468,6 +520,45 @@ function DashboardView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+       {/* Delete Confirmation Modal */}
+      {showDeleteModal && projectToDelete && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="delete-modal-icon">
+                <AlertTriangle size={24} />
+              </div>
+              <h2 className="modal-title">Delete Project</h2>
+              <button className="modal-close" onClick={() => setShowDeleteModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="delete-modal-body">
+              <p>Are you sure you want to delete <strong>"{projectToDelete.title}"</strong>?</p>
+              <p className="delete-warning">This action cannot be undone. All chapters, scenes, and content will be permanently deleted.</p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-danger"
+                onClick={confirmDelete}
+              >
+                <Trash2 size={16} />
+                Delete Project
+              </button>
+            </div>
           </div>
         </div>
       )}

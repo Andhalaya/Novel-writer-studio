@@ -5,14 +5,48 @@
 
 .sidebar {
   width: 300px;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 20px 12px;
   overflow-y: auto;
   flex-shrink: 0;
   box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+  padding: 20px 8px;
+}
+
+.sidebar.collapsed .logo-sub,
+.sidebar.collapsed .project-select,
+.sidebar.collapsed .sidebar-link-label {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-header {
+  text-align: center;
+}
+
+.sidebar.collapsed .logo::before {
+  margin-right: 0;
+  
+}
+
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-user > div:last-child {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 10px;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -35,13 +69,16 @@
 .sidebar-header {
   padding: 8px 12px 20px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.logo {
+.app-title{
   font-size: 20px;
   font-weight: 700;
-  color: #000000;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
   margin-bottom: 2px;
   display: flex;
@@ -49,16 +86,26 @@
   gap: 8px;
 }
 
-.logo::before {
-  content: '✒️';
-  font-size: 24px;
-}
-
-.logo-sub {
-  font-size: 11px;
-  color: #9ca3af;
+.app-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+.logo{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 /* ====================================
@@ -114,7 +161,7 @@
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -156,7 +203,7 @@
 /* Divider */
 .divider {
   height: 1px;
-  background: #f3f4f6;
+  background: var(--border);
   margin: 12px 0;
 }
 

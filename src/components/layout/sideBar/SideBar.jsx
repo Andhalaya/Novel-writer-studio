@@ -26,7 +26,7 @@ function NavItem({ to, icon: Icon, label }) {
   );
 }
 
-function SideBar() {
+function SideBar({ collapsed }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { currentProject, projects, selectProject, isProjectSelected } = useProject();
@@ -42,21 +42,25 @@ function SideBar() {
   };
 
   return (
-    <aside className="sidebar">
-      {/* Header */}
-      <div className="sidebar-header">
-        <div className="logo">NovelCraft</div>
-        <span className="logo-sub">Creative Writing Studio</span>
-      </div>
+     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      {/* Header */}     
+        {collapsed ? <div className="sidebar-header"><div className="logo">✒️</div></div>
+         : <div className="sidebar-header">
+          <div className="logo">✒️</div>
+          <div> 
+            <div className="app-title">NovelCraft</div>
+            <span className="app-subtitle">Creative Writing Studio</span>
+          </div>
+          </div>}
 
       {/* Project selector - only show if we have a project selected */}
-      {isProjectSelected && (
+      {isProjectSelected && !collapsed && (
         <select 
           className="project-select" 
           onChange={handleProjectChange}
           value={currentProject?.id || ""}
         >
-          <option value="" disabled>Select Project</option>
+          <option value="">All Projects</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.title}
@@ -106,7 +110,7 @@ function SideBar() {
       <div className="sidebar-footer">
         <button className="sidebar-link logout" onClick={handleLogout}>
           <LogOut size={18} />
-          Logout
+          {!collapsed && <span className="sidebar-link-label">Logout</span>}
         </button>
       </div>
     </aside>
