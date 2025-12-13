@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setInitializing(false);
+      console.log("Auth state changed:", firebaseUser);
     });
     return () => unsub();
   }, []);

@@ -1,23 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { BookOpen } from 'lucide-react';
 import "./Login.css";
 
-function Login() {
+function AuthScreen() {
   const { login, register } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
+  const [tab, setTab] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      if (mode === "login") {
+      if (tab === "login") {
         await login(email, password);
       } else {
         await register(email, password);
@@ -30,58 +32,71 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2 className="login-title">
-          {mode === "login" ? "Login" : "Create Account"}
-        </h2>
+    <div className="auth-screen">
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <BookOpen size={40} color="#6366f1" />
+            <h1>Novel Writer's Studio</h1>
+          </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-field">
-            <label className="field-label">
-              Email
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab ${tab === 'login' ? 'active' : ''}`}
+              onClick={() => setTab('login')}
+            >
+              Login
+            </button>
+            <button
+              className={`auth-tab ${tab === 'signup' ? 'active' : ''}`}
+              onClick={() => setTab('signup')}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Email</label>
               <input
                 type="email"
-                className="field-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
-            </label>
-          </div>
-
-          <div className="form-field">
-            <label className="field-label">
-              Password
+            </div>
+            <div className="form-group">
+              <label>Password</label>
               <input
                 type="password"
-                className="field-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               />
-            </label>
-          </div>
+            </div>
 
-          {error && <p className="error-message">{error}</p>}
+            {error && (
+              <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '8px' }}>
+                {error}
+              </div>
+            )}
 
-          <button type="submit" className="primary-btn">
-            {mode === "login" ? "Login" : "Register"}
-          </button>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Please wait...' : tab === 'login' ? 'Login' : 'Sign Up'}
+            </button>
+          </form>
 
-          <button
-            type="button"
-            onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}
-            className="secondary-btn"
-          >
-            {mode === "login"
-              ? "Need an account? Register"
-              : "Already have an account? Login"}
-          </button>
-        </form>
+          <p className="auth-hint">
+            {tab === 'login'
+              ? 'Enter your email and password to continue'
+              : 'Create a new account to start writing'}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-export default Login;
+export default AuthScreen;
