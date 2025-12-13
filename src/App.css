@@ -1,9 +1,89 @@
-*{
+/* Import theme variables */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ====================================
+   THEME VARIABLES
+==================================== */
+
+:root {
+  /* Light Theme Colors */
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  
+  --bg-primary: #fafbfc;
+  --bg-secondary: #f3f4f6;
+  --bg-tertiary: #e5e7eb;
+  
+  --surface: #ffffff;
+  
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Colors */
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #a5b4fc;
+  
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  
+  --surface: #1e293b;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  
+  --border: #334155;
+  --border-light: #475569;
+  
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+}
+
+/* ====================================
+   GLOBAL RESET
+==================================== */
+
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
   scroll-behavior: smooth;
+}
+
+/* Smooth theme transitions */
+*,
+*::before,
+*::after {
+  transition: background-color 0.2s ease, 
+              color 0.2s ease, 
+              border-color 0.2s ease;
+}
+
+/* Remove transitions for transform and position */
+button,
+.sidebar,
+.modal-overlay,
+.modal-content {
+  transition: background-color 0.2s ease, 
+              color 0.2s ease, 
+              border-color 0.2s ease,
+              transform 0.15s ease,
+              opacity 0.15s ease;
 }
 
 /* ====================================
@@ -15,11 +95,18 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #fafbfc;
+  background: var(--bg-primary);
 }
 
-.app-content{
+.app-content {
   width: calc(100% - 300px);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed ~ .app-content {
+  width: calc(100% - 70px);
 }
 
 /* ====================================
@@ -30,22 +117,29 @@
   position: fixed;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   top: 0;
   right: 0;
   width: calc(100% - 300px);
   min-height: 60px;
-  background: var(--bg-primary);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
-  align-items: center;
-  padding: 24px;
+  padding: 0 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  z-index: 90;
+  transition: width 0.3s ease;
 }
 
-.app-bar-left{
+.sidebar.collapsed ~ .app-content .app-bar {
+  width: calc(100% - 70px);
+}
+
+.app-bar-left {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
 }
 
 .app-bar-content {
@@ -67,6 +161,29 @@
   color: var(--text-tertiary);
   font-weight: 500;
 }
+
+/* ====================================
+   BUTTONS IN APP BAR
+==================================== */
+
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .theme-toggle {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -87,25 +204,6 @@
   transform: scale(1.05);
 }
 
-.sidebar-toggle {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-}
-
-.sidebar-toggle:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-
 /* ====================================
    MAIN CONTENT AREA
 ==================================== */
@@ -113,7 +211,7 @@
 .app-main {
   flex: 1;
   overflow-y: auto;
-  background: #fafbfc;
+  background: var(--bg-primary);
   margin-top: 60px;
   padding: 24px 32px;
 }
@@ -127,33 +225,46 @@
 }
 
 .app-main::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
+  background: var(--border);
   border-radius: 5px;
-  border: 2px solid #fafbfc;
+  border: 2px solid var(--bg-primary);
 }
 
 .app-main::-webkit-scrollbar-thumb:hover {
-  background: #d1d5db;
+  background: var(--text-tertiary);
 }
 
 /* ====================================
    RESPONSIVE
 ==================================== */
 
+@media (max-width: 1024px) {
+  .app-bar {
+    width: calc(100% - 240px);
+  }
+  
+  .sidebar.collapsed ~ .app-content .app-bar {
+    width: calc(100% - 70px);
+  }
+}
+
 @media (max-width: 768px) {
-  .sidebar {
-    width: 220px;
+  .app-content {
+    width: 100%;
+  }
+  
+  .app-bar {
+    width: 100%;
+    padding: 0 16px;
   }
   
   .app-main {
     padding: 20px;
   }
-}
-
-@media (max-width: 640px) {
+  
   .sidebar {
     position: fixed;
-    left: -240px;
+    left: -300px;
     top: 0;
     bottom: 0;
     z-index: 200;
@@ -163,9 +274,18 @@
   .sidebar.open {
     left: 0;
   }
+}
+
+@media (max-width: 640px) {
+  .app-bar-title {
+    font-size: 18px;
+  }
+  
+  .app-bar-subtitle {
+    font-size: 11px;
+  }
   
   .app-main {
-    margin-left: 0;
     padding: 16px;
   }
 }

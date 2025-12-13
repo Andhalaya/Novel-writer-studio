@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  BookOpen, 
-  Users, 
-  FileText, 
+import {
+  BookOpen,
+  Users,
+  FileText,
   TrendingUp,
   Calendar,
   Plus,
@@ -11,7 +11,10 @@ import {
   Clock,
   Target,
   X,
-  Trash2
+  Trash2,
+  AlertTriangle,
+  MapPin,
+  Sparkles
 } from "lucide-react";
 import { useFirestore } from "../../context/FirestoreContext";
 import { useProject } from "../../context/ProjectContext";
@@ -20,9 +23,8 @@ import React from "react";
 
 function DashboardView() {
   const navigate = useNavigate();
-  const { getChapters, createProject } = useFirestore();
+  const { getChapters, createProject, updateProject, deleteProject } = useFirestore();
   const { currentProject, projects, selectProject, refreshProjects, loading } = useProject();
-  const selectedProject = currentProject;
 
   const [chapters, setChapters] = useState([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -44,10 +46,6 @@ function DashboardView() {
     }
   }, [currentProject, getChapters]);
 
-  const openProject = (id) => {
-    navigate(`/project/${id}/chapters`);
-  };
-
   const handleCreateProject = async (e) => {
     e.preventDefault();
     setModalError("");
@@ -67,18 +65,15 @@ function DashboardView() {
 
     try {
       const docRef = await createProject(projectData);
-      
-      // Refresh projects list
+
       await refreshProjects();
-      
-      // Close modal and reset form
+
       setShowNewProjectModal(false);
       setModalTitle("");
       setModalGoalWordCount("");
       setModalStatus("Planning");
       setModalError("");
-      
-      // Navigate to the new project dashboard
+
       selectProject(docRef.id);
     } catch (err) {
       console.error(err);
@@ -96,7 +91,7 @@ function DashboardView() {
 
   const handleStatusChange = async (newStatus) => {
     if (!currentProject) return;
-    
+
     try {
       await updateProject(currentProject.id, { status: newStatus });
       await refreshProjects();
@@ -118,8 +113,7 @@ function DashboardView() {
       await refreshProjects();
       setShowDeleteModal(false);
       setProjectToDelete(null);
-      
-      // If we're deleting the current project, navigate to dashboard
+
       if (currentProject?.id === projectToDelete.id) {
         navigate("/dashboard");
       }
@@ -128,12 +122,12 @@ function DashboardView() {
     }
   };
 
-  // PROJECT DASHBOARD VIEW - Show when a project is selected
+  // PROJECT DASHBOARD VIEW
   if (currentProject) {
     const completedChapters = chapters.filter(c => c.status === "Complete" || c.status === "Completed").length;
     const inProgressChapters = chapters.filter(c => c.status === "In Progress" || c.status === "Drafting").length;
-    const avgWordsPerChapter = chapters.length > 0 
-      ? Math.round(currentProject.currentWordCount / chapters.length) 
+    const avgWordsPerChapter = chapters.length > 0
+      ? Math.round(currentProject.currentWordCount / chapters.length)
       : 0;
 
     return (
@@ -154,8 +148,8 @@ function DashboardView() {
               <option value="Drafting">Drafting</option>
               <option value="Completed">Completed</option>
             </select>
-            
-            <button 
+
+            <button
               className="btn-delete"
               onClick={() => handleDeleteClick(currentProject)}
             >
@@ -164,6 +158,60 @@ function DashboardView() {
             </button>
           </div>
         </div>
+        <div className="dashboard-columns">
+          {/* Codex Quick Access Section */}
+      <div className="content-section">
+        <div className="section-header">
+          <h2 className="section-title">Codex Overview</h2>
+        </div>
+
+        <div className="codex-grid">
+          <div
+            className="codex-card codex-characters"
+            onClick={() => navigate(`/project/${currentProject.id}/codex?tab=characters`)}
+          >
+            <div className="codex-card-header">
+              <Users size={24} className="codex-icon" />
+              <span className="codex-label">Characters</span>
+            </div>
+            <div className="codex-count">8</div>
+          </div>
+
+          <div
+            className="codex-card codex-locations"
+            onClick={() => navigate(`/project/${currentProject.id}/codex?tab=locations`)}
+          >
+            <div className="codex-card-header">
+              <MapPin size={24} className="codex-icon" />
+              <span className="codex-label">Locations</span>
+            </div>
+            <div className="codex-count">12</div>
+          </div>
+
+          <div
+            className="codex-card codex-magic"
+            onClick={() => navigate(`/project/${currentProject.id}/codex?tab=magic`)}
+          >
+            <div className="codex-card-header">
+              <Sparkles size={24} className="codex-icon" />
+              <span className="codex-label">Magic System</span>
+            </div>
+            <div className="codex-count">5</div>
+          </div>
+
+          <div
+            className="codex-card codex-timeline"
+            onClick={() => navigate(`/project/${currentProject.id}/codex?tab=timeline`)}
+          >
+            <div className="codex-card-header">
+              <Calendar size={24} className="codex-icon" />
+              <span className="codex-label">Timeline</span>
+            </div>
+            <div className="codex-count">3</div>
+          </div>
+        </div>
+      </div>
+
 
         {/* Stats Grid */}
         <div className="stats-grid">
@@ -179,12 +227,12 @@ function DashboardView() {
               of {currentProject.goalWordCount?.toLocaleString() || 0} goal
             </div>
             <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ 
-                  width: `${currentProject.goalWordCount > 0 
-                    ? Math.min((currentProject.currentWordCount / currentProject.goalWordCount) * 100, 100) 
-                    : 0}%` 
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${currentProject.goalWordCount > 0
+                    ? Math.min((currentProject.currentWordCount / currentProject.goalWordCount) * 100, 100)
+                    : 0}%`
                 }}
               />
             </div>
@@ -210,8 +258,8 @@ function DashboardView() {
               <span className="stat-label">Progress</span>
             </div>
             <div className="stat-value">
-              {selectedProject.goalWordCount > 0 
-                ? Math.round((selectedProject.currentWordCount / selectedProject.goalWordCount) * 100) 
+              {currentProject.goalWordCount > 0
+                ? Math.round((currentProject.currentWordCount / currentProject.goalWordCount) * 100)
                 : 0}%
             </div>
             <div className="stat-subtitle">Overall completion</div>
@@ -228,7 +276,8 @@ function DashboardView() {
             <div className="stat-subtitle">words per chapter</div>
           </div>
         </div>
-
+        </div>
+        
         {/* Two Column Layout */}
         <div className="dashboard-columns">
           {/* Recent Activity */}
@@ -254,8 +303,8 @@ function DashboardView() {
                 <div className="activity-content">
                   <div className="activity-title">Project created</div>
                   <div className="activity-meta">
-                    {currentProject.createdAt?.toDate 
-                      ? currentProject.createdAt.toDate().toLocaleDateString() 
+                    {currentProject.createdAt?.toDate
+                      ? currentProject.createdAt.toDate().toLocaleDateString()
                       : "N/A"}
                   </div>
                 </div>
@@ -269,7 +318,7 @@ function DashboardView() {
               <h2 className="section-title">Quick Actions</h2>
             </div>
             <div className="action-buttons">
-              <button 
+              <button
                 className="action-btn"
                 onClick={() => navigate(`/project/${currentProject.id}/chapters`)}
               >
@@ -281,7 +330,7 @@ function DashboardView() {
                 <ChevronRight size={16} />
               </button>
 
-              <button 
+              <button
                 className="action-btn"
                 onClick={() => navigate(`/project/${currentProject.id}/codex`)}
               >
@@ -293,7 +342,7 @@ function DashboardView() {
                 <ChevronRight size={16} />
               </button>
 
-              <button 
+              <button
                 className="action-btn"
                 onClick={() => navigate(`/project/${currentProject.id}/manuscript`)}
               >
@@ -312,7 +361,7 @@ function DashboardView() {
         <div className="content-section">
           <div className="section-header">
             <h2 className="section-title">Chapters Overview</h2>
-            <button 
+            <button
               className="btn-primary-sm"
               onClick={() => navigate(`/project/${currentProject.id}/chapters`)}
             >
@@ -326,7 +375,7 @@ function DashboardView() {
               <div className="empty-state">
                 <BookOpen size={48} className="empty-icon" />
                 <p>No chapters yet</p>
-                <button 
+                <button
                   className="btn-secondary"
                   onClick={() => navigate(`/project/${currentProject.id}/chapters`)}
                 >
@@ -335,8 +384,8 @@ function DashboardView() {
               </div>
             ) : (
               chapters.slice(0, 5).map((chapter, index) => (
-                <div 
-                  key={chapter.id} 
+                <div
+                  key={chapter.id}
                   className="chapter-item"
                   onClick={() => navigate(`/project/${currentProject.id}/chapters`)}
                 >
@@ -359,7 +408,7 @@ function DashboardView() {
     );
   }
 
-  // PROJECTS LIST VIEW - Show when no project selected
+  // PROJECTS LIST VIEW
   return (
     <div className="dashboard-container">
       <div className="page-header">
@@ -367,7 +416,7 @@ function DashboardView() {
           <h1 className="page-title">My Projects</h1>
           <p className="page-subtitle">Manage and organize your writing projects</p>
         </div>
-        <button 
+        <button
           className="btn-primary"
           onClick={() => setShowNewProjectModal(true)}
         >
@@ -386,7 +435,7 @@ function DashboardView() {
           <BookOpen size={64} className="empty-icon" />
           <h2>No projects yet</h2>
           <p>Create your first writing project to get started</p>
-          <button 
+          <button
             className="btn-primary"
             onClick={() => setShowNewProjectModal(true)}
           >
@@ -397,8 +446,8 @@ function DashboardView() {
       ) : (
         <div className="projects-grid">
           {projects.map((project) => (
-            <div 
-              key={project.id} 
+            <div
+              key={project.id}
               className="project-card"
               onClick={() => selectProject(project.id)}
             >
@@ -424,18 +473,18 @@ function DashboardView() {
                 <div className="progress-info">
                   <span className="progress-label">Progress</span>
                   <span className="progress-percentage">
-                    {project.goalWordCount > 0 
-                      ? Math.round((project.currentWordCount / project.goalWordCount) * 100) 
+                    {project.goalWordCount > 0
+                      ? Math.round((project.currentWordCount / project.goalWordCount) * 100)
                       : 0}%
                   </span>
                 </div>
                 <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ 
-                      width: `${project.goalWordCount > 0 
-                        ? Math.min((project.currentWordCount / project.goalWordCount) * 100, 100) 
-                        : 0}%` 
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${project.goalWordCount > 0
+                        ? Math.min((project.currentWordCount / project.goalWordCount) * 100, 100)
+                        : 0}%`
                     }}
                   />
                 </div>
@@ -456,6 +505,7 @@ function DashboardView() {
         </div>
       )}
 
+      
       {/* New Project Modal */}
       {showNewProjectModal && (
         <div className="modal-overlay" onClick={closeModal}>
@@ -524,7 +574,7 @@ function DashboardView() {
         </div>
       )}
 
-       {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && projectToDelete && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
           <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
@@ -551,7 +601,7 @@ function DashboardView() {
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="btn-danger"
                 onClick={confirmDelete}
               >

@@ -6,13 +6,14 @@ import {
   FileText,
   Folder,
   LogOut,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { useProject } from "../../../context/ProjectContext.jsx";
 import { useAuth } from "../../../context/AuthContext.jsx";
 import "./SideBar.css";
 
-function NavItem({ to, icon: Icon, label }) {
+function NavItem({ to, icon: Icon, label, collapsed }) {
   return (
     <NavLink
       to={to}
@@ -21,7 +22,7 @@ function NavItem({ to, icon: Icon, label }) {
       }
     >
       <Icon size={18} />
-      {label}
+      {!collapsed && <span className="sidebar-link-label">{label}</span>}
     </NavLink>
   );
 }
@@ -42,16 +43,21 @@ function SideBar({ collapsed }) {
   };
 
   return (
-     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      {/* Header */}     
-        {collapsed ? <div className="sidebar-header"><div className="logo">✒️</div></div>
-         : <div className="sidebar-header">
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      {/* Header */}
+      {collapsed ? (
+        <div className="sidebar-header">
+          <div className="logo">✒️</div>
+        </div>
+      ) : (
+        <div className="sidebar-header">
           <div className="logo">✒️</div>
           <div> 
             <div className="app-title">NovelCraft</div>
             <span className="app-subtitle">Creative Writing Studio</span>
           </div>
-          </div>}
+        </div>
+      )}
 
       {/* Project selector - only show if we have a project selected */}
       {isProjectSelected && !collapsed && (
@@ -71,25 +77,34 @@ function SideBar({ collapsed }) {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <NavItem to="/" icon={Folder} label="Projects" />
+        <NavItem to="/" icon={Folder} label="Projects" collapsed={collapsed} />
 
         {isProjectSelected && currentProject && (
           <>
             <div className="divider" />
             <NavItem 
+              to={`/dashboard/${currentProject.id}`} 
+              icon={LayoutDashboard} 
+              label="Dashboard"
+              collapsed={collapsed}
+            />
+            <NavItem 
               to={`/project/${currentProject.id}/chapters`} 
               icon={BookOpen} 
-              label="Chapters" 
+              label="Chapters"
+              collapsed={collapsed}
             />
             <NavItem 
               to={`/project/${currentProject.id}/codex`} 
               icon={Database} 
-              label="Codex" 
+              label="Codex"
+              collapsed={collapsed}
             />
             <NavItem 
               to={`/project/${currentProject.id}/manuscript`} 
               icon={FileText} 
-              label="Manuscript" 
+              label="Manuscript"
+              collapsed={collapsed}
             />
           </>
         )}
@@ -99,10 +114,12 @@ function SideBar({ collapsed }) {
       {user && (
         <div className="sidebar-user">
           <div className="avatar">{user.email?.[0]?.toUpperCase() || 'U'}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="user-name">{user.displayName || 'User'}</div>
-            <div className="user-email">{user.email}</div>
-          </div>
+          {!collapsed && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="user-name">{user.displayName || 'User'}</div>
+              <div className="user-email">{user.email}</div>
+            </div>
+          )}
         </div>
       )}
 
