@@ -437,13 +437,24 @@
 }
 
 .save-status {
-  margin-left: auto;
   font-size: 12px;
-  color: var(--success);
+  font-weight: 600;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
+/* Not saved */
+.save-status.dirty {
+  color: var(--error);
+}
+
+/* Saved */
+.save-status.saved {
+  color: var(--success);
+}
+
 
 .editor-content {
   flex: 1;

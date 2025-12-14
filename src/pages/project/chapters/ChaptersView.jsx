@@ -37,11 +37,14 @@ export default function ChaptersView() {
   const [chapterTitleDraft, setChapterTitleDraft] = useState("");
 
 
+
   // Editor state
   const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
   const [editorType, setEditorType] = useState(null); // 'scene' or 'beat'
   const [editorId, setEditorId] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle"); // 'idle', 'dirty', 'saving', 'saved'
 
   useEffect(() => {
     loadChapters();
@@ -85,6 +88,9 @@ export default function ChaptersView() {
     setEditorTitle(item.title || (type === 'scene' ? 'Untitled Scene' : 'Untitled Beat'));
     setEditorContent(type === 'scene' ? item.text || '' : item.description || '');
     setEditingItem({ type, id: item.id });
+    setIsDirty(false);
+    setSaveStatus("idle");
+
   };
 
   const saveEditor = async () => {
@@ -111,6 +117,9 @@ export default function ChaptersView() {
         )
       );
     }
+
+    setIsDirty(false);
+    setSaveStatus("saved");
   };
 
   const handleDeleteItem = async (type, id) => {
@@ -303,7 +312,7 @@ export default function ChaptersView() {
       {/* Chapter Title Input */}
       {selectedChapter && (
         <div className="chapter-title-bar">
-          
+
           <input
             className="editor-title-input"
             value={chapterTitleDraft}
@@ -330,7 +339,7 @@ export default function ChaptersView() {
             placeholder="Chapter title…"
           />
           <div className="chapter-title-number">
-          {selectedChapter.scenes?.length || 0} scenes • {beats.length || 0} beats • 1023 words</div>
+            {selectedChapter.scenes?.length || 0} scenes • {beats.length || 0} beats • 1023 words</div>
         </div>
       )}
 
@@ -385,7 +394,13 @@ export default function ChaptersView() {
                   >
                     🗑️ Delete
                   </button>
-                  <div className="save-status">● Auto-saved</div>
+                  {saveStatus !== "idle" && (
+                    <div className={`save-status ${saveStatus}`}>
+                      {saveStatus === "dirty" && "● Not saved"}
+                      {saveStatus === "saved" && "● Saved"}
+                    </div>
+                  )}
+
                 </div>
               </div>
 
@@ -393,8 +408,12 @@ export default function ChaptersView() {
                 <textarea
                   className="editor-textarea"
                   value={editorContent}
-                  onChange={(e) => setEditorContent(e.target.value)}
-                  onBlur={saveEditor}
+                  onChange={(e) => {
+                    setEditorContent(e.target.value);
+                    setIsDirty(true);
+                    setSaveStatus("dirty");
+                  }}
+
                   placeholder={`Write your ${editorType} here...`}
                 />
               </div>
