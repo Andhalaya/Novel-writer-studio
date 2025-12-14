@@ -739,7 +739,7 @@
   border: 2px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

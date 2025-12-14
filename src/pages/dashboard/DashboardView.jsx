@@ -148,7 +148,6 @@ function DashboardView() {
               <option value="Drafting">Drafting</option>
               <option value="Completed">Completed</option>
             </select>
-
             <button
               className="btn-delete"
               onClick={() => handleDeleteClick(currentProject)}

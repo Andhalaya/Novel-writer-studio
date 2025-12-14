@@ -460,22 +460,22 @@
 .editor-content {
   flex: 1;
   padding: 32px;
-  overflow-y: auto;
 }
 
 .editor-textarea {
   width: 100%;
-  min-height: 500px;
+  height: 100%;
   padding: 24px;
   border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 16px;
   line-height: 1.8;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   background: var(--surface);
   font-family: 'Georgia', serif;
-  resize: vertical;
+  resize: none;
   transition: all 0.15s;
+  white-space: pre-wrap;
 }
 
 .editor-textarea:focus {
