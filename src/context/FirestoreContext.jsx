@@ -10,6 +10,7 @@ import {
     deleteDoc,
     orderBy,
     query,
+    writeBatch,
 } from "firebase/firestore";
 
 const FirestoreContext = createContext();
@@ -89,10 +90,16 @@ export function FirestoreProvider({ children }) {
     const createBeat = async (projectId, chapterId, data) => {
         return addDoc(collection(db, "projects", projectId, "chapters", chapterId, "beats"), {
             orderIndex: data.orderIndex ?? Date.now(),
+            linkedSceneId: data.linkedSceneId || null, // NEW: Track which scene this beat is linked to
             createdAt: new Date(),
             updatedAt: new Date(),
             ...data,
         });
+    };
+
+    const deleteBeat = async (projectId, chapterId, beatId) => {
+        const ref = doc(db, "projects", projectId, "chapters", chapterId, "beats", beatId);
+        return deleteDoc(ref);
     };
 
     // --------------------------
@@ -145,6 +152,71 @@ export function FirestoreProvider({ children }) {
         return deleteDoc(ref);
     };
 
+    // --------------------------
+    // NEW: BEAT-SCENE LINKING
+    // --------------------------
+    
+    /**
+     * Link a beat to a scene
+     */
+    const linkBeatToScene = async (projectId, chapterId, beatId, sceneId) => {
+        const ref = doc(db, "projects", projectId, "chapters", chapterId, "beats", beatId);
+        return updateDoc(ref, { 
+            linkedSceneId: sceneId,
+            updatedAt: new Date() 
+        });
+    };
+
+    /**
+     * Unlink a beat from its scene
+     */
+    const unlinkBeat = async (projectId, chapterId, beatId) => {
+        const ref = doc(db, "projects", projectId, "chapters", chapterId, "beats", beatId);
+        return updateDoc(ref, { 
+            linkedSceneId: null,
+            updatedAt: new Date() 
+        });
+    };
+
+    /**
+     * Reorder scenes and update linked beats accordingly
+     * This ensures beats stay synchronized with their linked scenes
+     */
+    const reorderScenesWithBeats = async (projectId, chapterId, reorderedScenes, beats) => {
+        const batch = writeBatch(db);
+
+        // Update scene order
+        reorderedScenes.forEach((scene, index) => {
+            const sceneRef = doc(db, "projects", projectId, "chapters", chapterId, "scenes", scene.id);
+            batch.update(sceneRef, { orderIndex: index, updatedAt: new Date() });
+        });
+
+        // Update beat order based on linked scenes
+        const linkedBeats = beats.filter(b => b.linkedSceneId);
+        linkedBeats.forEach(beat => {
+            const linkedSceneIndex = reorderedScenes.findIndex(s => s.id === beat.linkedSceneId);
+            if (linkedSceneIndex !== -1) {
+                const beatRef = doc(db, "projects", projectId, "chapters", chapterId, "beats", beat.id);
+                batch.update(beatRef, { 
+                    orderIndex: linkedSceneIndex,
+                    updatedAt: new Date() 
+                });
+            }
+        });
+
+        // Unlinked beats keep their current order at the end
+        const unlinkedBeats = beats.filter(b => !b.linkedSceneId);
+        unlinkedBeats.forEach((beat, index) => {
+            const beatRef = doc(db, "projects", projectId, "chapters", chapterId, "beats", beat.id);
+            batch.update(beatRef, { 
+                orderIndex: reorderedScenes.length + index,
+                updatedAt: new Date() 
+            });
+        });
+
+        return batch.commit();
+    };
+
 
     return (
         <FirestoreContext.Provider value={{
@@ -160,12 +232,17 @@ export function FirestoreProvider({ children }) {
             getBeats,
             createBeat,
             updateBeat,
+            deleteBeat,
 
             getScenes,
             createScene,
             updateScene,
             deleteScene,
 
+            // NEW: Beat-Scene linking functions
+            linkBeatToScene,
+            unlinkBeat,
+            reorderScenesWithBeats,
         }}>
             {children}
         </FirestoreContext.Provider>
