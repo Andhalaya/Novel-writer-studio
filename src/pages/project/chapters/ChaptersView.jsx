@@ -50,6 +50,56 @@ export default function ChaptersView() {
     loadChapters();
   }, [projectId]);
 
+  useEffect(() => {
+    if (!editorType || !editorId || !selectedChapter) return;
+
+    const interval = setInterval(async () => {
+      if (!isDirty) return;
+
+      if (editorType === "scene") {
+        await updateScene(projectId, selectedChapter.id, editorId, {
+          text: editorContent,
+          title: editorTitle,
+        });
+
+        setScenes((prev) =>
+          prev.map((s) =>
+            s.id === editorId
+              ? { ...s, text: editorContent, title: editorTitle }
+              : s
+          )
+        );
+      } else {
+        await updateBeat(projectId, selectedChapter.id, editorId, {
+          description: editorContent,
+          title: editorTitle,
+        });
+
+        setBeats((prev) =>
+          prev.map((b) =>
+            b.id === editorId
+              ? { ...b, description: editorContent, title: editorTitle }
+              : b
+          )
+        );
+      }
+
+      setIsDirty(false);
+      setSaveStatus("autosaved");
+    }, 10000); // ← 30 seconds
+
+    return () => clearInterval(interval);
+  }, [
+    editorType,
+    editorId,
+    selectedChapter?.id,
+    isDirty,
+    editorTitle,
+    editorContent,
+    projectId,
+  ]);
+
+
   const loadChapters = async () => {
     const chaptersData = await getChapters(projectId);
     setChapters(chaptersData);
@@ -398,9 +448,9 @@ export default function ChaptersView() {
                     <div className={`save-status ${saveStatus}`}>
                       {saveStatus === "dirty" && "● Not saved"}
                       {saveStatus === "saved" && "● Saved"}
+                      {saveStatus === "autosaved" && "● Auto-saved"}
                     </div>
                   )}
-
                 </div>
               </div>
 

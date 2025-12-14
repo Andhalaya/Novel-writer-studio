@@ -451,7 +451,8 @@
 }
 
 /* Saved */
-.save-status.saved {
+.save-status.saved,
+.save-status.autosaved {
   color: var(--success);
 }
 
