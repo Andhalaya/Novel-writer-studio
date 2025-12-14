@@ -10,12 +10,18 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
+import {
+  BASE_VERSION_ID,
+  getDisplayContent as getDisplayContentFromUtils,
+} from "../../../utils/versionUtils";
 
 const HIGHLIGHT_COLORS = {
   yellow: "rgba(254, 240, 138, 0.8)",
   green: "rgba(187, 247, 208, 0.65)",
   pink: "rgba(249, 168, 212, 0.65)",
 };
+
+const getDisplayScene = (scene) => getDisplayContentFromUtils(scene);
 
 export default function ManuscriptView() {
   const { projectId } = useParams();
