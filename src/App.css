@@ -213,7 +213,6 @@ button,
   overflow-y: auto;
   background: var(--bg-primary);
   margin-top: 60px;
-  padding: 24px 32px;
 }
 
 .app-main::-webkit-scrollbar {
@@ -258,9 +257,6 @@ button,
     padding: 0 16px;
   }
   
-  .app-main {
-    padding: 20px;
-  }
   
   .sidebar {
     position: fixed;
@@ -284,8 +280,5 @@ button,
   .app-bar-subtitle {
     font-size: 11px;
   }
-  
-  .app-main {
-    padding: 16px;
-  }
+
 }
