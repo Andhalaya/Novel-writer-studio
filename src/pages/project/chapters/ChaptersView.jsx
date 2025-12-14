@@ -20,6 +20,7 @@ export default function ChaptersView() {
     getScenes,
     updateBeat,
     updateScene,
+    updateChapter,
     deleteScene,
     deleteBeat,
   } = useFirestore();
@@ -28,11 +29,13 @@ export default function ChaptersView() {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [scenes, setScenes] = useState([]);
   const [beats, setBeats] = useState([]);
-  const [viewMode, setViewMode] = useState("both"); // 'both', 'scenes', 'beats'
+  const [viewMode, setViewMode] = useState("both");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
   const [showBeatModal, setShowBeatModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null); // { type: 'scene'/'beat', id: '...' }
+  const [editingItem, setEditingItem] = useState(null);
+  const [chapterTitleDraft, setChapterTitleDraft] = useState("");
+
 
   // Editor state
   const [editorTitle, setEditorTitle] = useState("");
@@ -50,21 +53,31 @@ export default function ChaptersView() {
     if (chaptersData.length > 0 && !selectedChapter) {
       loadChapter(chaptersData[0]);
     }
+    console.log("Loaded chapters:", chaptersData);
   };
+
+  const chapterNumber = selectedChapter
+    ? chapters
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .findIndex((c) => c.id === selectedChapter.id) + 1
+    : null;
 
   const loadChapter = async (chapter) => {
     setSelectedChapter(chapter);
+    setChapterTitleDraft(chapter.title);
+
     const [scenesData, beatsData] = await Promise.all([
       getScenes(projectId, chapter.id),
       getBeats(projectId, chapter.id),
     ]);
+
     setScenes(scenesData);
     setBeats(beatsData);
-    
-    // Clear editor if switching chapters
+
     setEditingItem(null);
     setEditorType(null);
   };
+
 
   const loadIntoEditor = (type, item) => {
     setEditorType(type);
@@ -163,7 +176,7 @@ export default function ChaptersView() {
             />
           ) : (
             <div className="card-section empty-section">
-              <button className="add-empty-btn" 
+              <button className="add-empty-btn"
               // onClick={() => setShowSceneModal(true)}
               >
                 <Plus size={18} />
@@ -183,7 +196,7 @@ export default function ChaptersView() {
             <div className="card-section empty-section">
               <button className="add-empty-btn"
               //  onClick={() => setShowBeatModal(true)}
-               >
+              >
                 <Plus size={18} />
                 <span>Add Beat</span>
               </button>
@@ -228,7 +241,7 @@ export default function ChaptersView() {
           >
             <span>
               {selectedChapter
-                ? selectedChapter.title
+                ? `Chapter ${chapterNumber}`
                 : "Select a chapter"}
             </span>
             <ChevronDown size={16} />
@@ -239,9 +252,8 @@ export default function ChaptersView() {
               {chapters.map((chapter) => (
                 <div
                   key={chapter.id}
-                  className={`chapter-dropdown-item ${
-                    selectedChapter?.id === chapter.id ? "active" : ""
-                  }`}
+                  className={`chapter-dropdown-item ${selectedChapter?.id === chapter.id ? "active" : ""
+                    }`}
                   onClick={() => {
                     loadChapter(chapter);
                     setDropdownOpen(false);
@@ -288,6 +300,39 @@ export default function ChaptersView() {
           <span>{getAddButtonText()}</span>
         </button>
       </div>
+      {/* Chapter Title Input */}
+      {selectedChapter && (
+        <div className="chapter-title-bar">
+          
+          <input
+            className="editor-title-input"
+            value={chapterTitleDraft}
+            onChange={(e) => setChapterTitleDraft(e.target.value)}
+            onBlur={async () => {
+              const next = chapterTitleDraft.trim();
+              if (!next || next === selectedChapter.title) return;
+
+              await updateChapter(projectId, selectedChapter.id, {
+                title: next,
+              });
+
+              setChapters((prev) =>
+                prev.map((c) =>
+                  c.id === selectedChapter.id ? { ...c, title: next } : c
+                )
+              );
+
+              setSelectedChapter((prev) => ({
+                ...prev,
+                title: next,
+              }));
+            }}
+            placeholder="Chapter title…"
+          />
+          <div className="chapter-title-number">
+          {selectedChapter.scenes?.length || 0} scenes • {beats.length || 0} beats • 1023 words</div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="main-content">
