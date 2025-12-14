@@ -251,6 +251,12 @@
   color: #8b5cf6;
 }
 
+.version-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -517,6 +523,51 @@
 
 .link-selector-cancel:hover {
   background: var(--bg-secondary);
+}
+
+.version-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px;
+}
+
+.version-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.version-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.version-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.version-badge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.version-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 8px 0;
+  line-height: 1.5;
 }
 
 /* ====================================

@@ -10,6 +10,53 @@ import {
   Unlink,
 } from "lucide-react";
 
+const BASE_VERSION_ID = "base-version";
+
+const getVersionOptions = (scene) => {
+  if (!scene) return [];
+  const baseVersion = {
+    id: BASE_VERSION_ID,
+    title: scene.title || "Untitled Scene",
+    text: scene.text || "",
+    label: "Version 1",
+    createdAt: scene.createdAt || new Date().toISOString(),
+  };
+  return [baseVersion, ...(scene.versions || [])];
+};
+
+const getVersionLabel = (scene, versionId) => {
+  const options = getVersionOptions(scene);
+  if (!options.length) return "Version 1";
+  const active = options.find((v) => v.id === versionId) || options[0];
+  const index = options.findIndex((v) => v.id === active.id);
+  const number = index + 1;
+  return active.label || active.title || `Version ${number}`;
+};
+
+const getVersionById = (scene, versionId) => {
+  if (!scene) return null;
+  if (versionId === BASE_VERSION_ID) {
+    return {
+      id: BASE_VERSION_ID,
+      title: scene.title,
+      text: scene.text,
+    };
+  }
+  return (scene.versions || []).find((v) => v.id === versionId) || null;
+};
+
+const getDisplayContent = (scene) => {
+  if (!scene) return { title: "", text: "" };
+  const activeVersion =
+    scene.activeVersionId && scene.activeVersionId !== BASE_VERSION_ID
+      ? getVersionById(scene, scene.activeVersionId)
+      : null;
+
+  const title = scene.manuscriptTitle || activeVersion?.title || scene.title || "Untitled Scene";
+  const text = scene.manuscriptText || activeVersion?.text || scene.text || "";
+  return { title, text };
+};
+
 export default function ChaptersView() {
   const { projectId } = useParams();
   const {
@@ -43,6 +90,7 @@ export default function ChaptersView() {
   const [editorContent, setEditorContent] = useState("");
   const [editorType, setEditorType] = useState(null);
   const [editorId, setEditorId] = useState(null);
+  const [editorVersionId, setEditorVersionId] = useState(BASE_VERSION_ID);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
 
@@ -55,37 +103,23 @@ export default function ChaptersView() {
 
     const interval = setInterval(async () => {
       if (!isDirty) return;
+      if (editorType === "scene") return;
 
-      if (editorType === "scene") {
-        await updateScene(projectId, selectedChapter.id, editorId, {
-          text: editorContent,
-          title: editorTitle,
-        });
+      await updateBeat(projectId, selectedChapter.id, editorId, {
+        description: editorContent,
+        title: editorTitle,
+      });
 
-        setScenes((prev) =>
-          prev.map((s) =>
-            s.id === editorId
-              ? { ...s, text: editorContent, title: editorTitle }
-              : s
-          )
-        );
-      } else {
-        await updateBeat(projectId, selectedChapter.id, editorId, {
-          description: editorContent,
-          title: editorTitle,
-        });
-
-        setBeats((prev) =>
-          prev.map((b) =>
-            b.id === editorId
-              ? { ...b, description: editorContent, title: editorTitle }
-              : b
-          )
-        );
-      }
+      setBeats((prev) =>
+        prev.map((b) =>
+          b.id === editorId
+            ? { ...b, description: editorContent, title: editorTitle }
+            : b
+        )
+      );
 
       setIsDirty(false);
-      setSaveStatus("autosaved");
+      setSaveStatus("saved");
     }, 10000);
 
     return () => clearInterval(interval);
@@ -109,8 +143,8 @@ export default function ChaptersView() {
 
   const chapterNumber = selectedChapter
     ? chapters
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .findIndex((c) => c.id === selectedChapter.id) + 1
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
 
   const loadChapter = async (chapter) => {
@@ -122,20 +156,37 @@ export default function ChaptersView() {
       getBeats(projectId, chapter.id),
     ]);
 
-    setScenes(scenesData);
+    setScenes(
+      scenesData.map((s) => ({
+        ...s,
+        activeVersionId: s.activeVersionId || BASE_VERSION_ID,
+      }))
+    );
     setBeats(beatsData);
 
     setEditingItem(null);
     setEditorType(null);
   };
 
-  const loadIntoEditor = (type, item) => {
+  const loadIntoEditor = (type, item, versionId = null) => {
     setEditorType(type);
     setEditorId(item.id);
-    setEditorTitle(
-      item.title || (type === "scene" ? "Untitled Scene" : "Untitled Beat")
-    );
-    setEditorContent(type === "scene" ? item.text || "" : item.description || "");
+    if (type === "scene") {
+      const options = getVersionOptions(item);
+      const activeId = versionId || item.activeVersionId || BASE_VERSION_ID;
+      const activeVersion =
+        options.find((v) => v.id === activeId) || options[0] || {};
+      setEditorVersionId(activeVersion.id || BASE_VERSION_ID);
+      setEditorTitle(
+        activeVersion.title ||
+        item.title ||
+        (type === "scene" ? "Untitled Scene" : "Untitled Beat")
+      );
+      setEditorContent(activeVersion.text || item.text || "");
+    } else {
+      setEditorTitle(item.title || "Untitled Beat");
+      setEditorContent(item.description || "");
+    }
     setEditingItem({ type, id: item.id });
     setIsDirty(false);
     setSaveStatus("idle");
@@ -145,26 +196,19 @@ export default function ChaptersView() {
     if (!editorType || !editorId) return;
 
     if (editorType === "scene") {
-      await updateScene(projectId, selectedChapter.id, editorId, {
-        text: editorContent,
-        title: editorTitle,
-      });
-      setScenes((prev) =>
-        prev.map((s) =>
-          s.id === editorId ? { ...s, text: editorContent, title: editorTitle } : s
-        )
-      );
-    } else {
-      await updateBeat(projectId, selectedChapter.id, editorId, {
-        description: editorContent,
-        title: editorTitle,
-      });
-      setBeats((prev) =>
-        prev.map((b) =>
-          b.id === editorId ? { ...b, description: editorContent, title: editorTitle } : b
-        )
-      );
+      await saveCurrentVersion();
+      return;
     }
+
+    await updateBeat(projectId, selectedChapter.id, editorId, {
+      description: editorContent,
+      title: editorTitle,
+    });
+    setBeats((prev) =>
+      prev.map((b) =>
+        b.id === editorId ? { ...b, description: editorContent, title: editorTitle } : b
+      )
+    );
 
     setIsDirty(false);
     setSaveStatus("saved");
@@ -176,13 +220,13 @@ export default function ChaptersView() {
     if (type === "scene") {
       await deleteScene(projectId, selectedChapter.id, id);
       setScenes((prev) => prev.filter((s) => s.id !== id));
-      
+
       // Unlink any beats that were linked to this scene
       const linkedBeats = beats.filter(b => b.linkedSceneId === id);
       for (const beat of linkedBeats) {
         await unlinkBeat(projectId, selectedChapter.id, beat.id);
       }
-      setBeats((prev) => prev.map(b => 
+      setBeats((prev) => prev.map(b =>
         b.linkedSceneId === id ? { ...b, linkedSceneId: null } : b
       ));
     } else {
@@ -207,18 +251,18 @@ export default function ChaptersView() {
     }
 
     await linkBeatToScene(projectId, selectedChapter.id, beatId, sceneId);
-    
+
     setBeats((prev) =>
       prev.map((b) => (b.id === beatId ? { ...b, linkedSceneId: sceneId } : b))
     );
-    
+
     setShowLinkSelector(null);
   };
 
   // Handle unlinking a beat
   const handleUnlinkBeat = async (beatId) => {
     await unlinkBeat(projectId, selectedChapter.id, beatId);
-    
+
     setBeats((prev) =>
       prev.map((b) => (b.id === beatId ? { ...b, linkedSceneId: null } : b))
     );
@@ -231,13 +275,185 @@ export default function ChaptersView() {
     reordered.splice(dropIndex, 0, removed);
 
     setScenes(reordered);
-    
+
     // Update both scenes and linked beats
     await reorderScenesWithBeats(projectId, selectedChapter.id, reordered, beats);
-    
+
     // Reload to get updated beat order
     const beatsData = await getBeats(projectId, selectedChapter.id);
     setBeats(beatsData);
+  };
+
+  const handleSelectVersion = (sceneId, versionId) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    loadIntoEditor("scene", scene, versionId);
+  };
+
+  const saveCurrentVersion = async () => {
+    if (editorType !== "scene" || !editorId) return;
+    const scene = scenes.find((s) => s.id === editorId);
+    if (!scene) return;
+
+    if (editorVersionId === BASE_VERSION_ID) {
+      await updateScene(projectId, selectedChapter.id, editorId, {
+        text: editorContent,
+        title: editorTitle,
+        activeVersionId: BASE_VERSION_ID,
+      });
+      setScenes((prev) =>
+        prev.map((s) =>
+          s.id === editorId
+            ? { ...s, text: editorContent, title: editorTitle, activeVersionId: BASE_VERSION_ID }
+            : s
+        )
+      );
+    } else {
+      const updatedVersions = (scene.versions || []).map((v) =>
+        v.id === editorVersionId
+          ? { ...v, title: editorTitle, label: editorTitle, text: editorContent }
+          : v
+      );
+      await updateScene(projectId, selectedChapter.id, editorId, {
+        versions: updatedVersions,
+      });
+      setScenes((prev) =>
+        prev.map((s) => (s.id === editorId ? { ...s, versions: updatedVersions } : s))
+      );
+    }
+
+    setIsDirty(false);
+    setSaveStatus("saved");
+  };
+
+  const saveNewVersion = async () => {
+    if (editorType !== "scene" || !editorId) return;
+    const scene = scenes.find((s) => s.id === editorId);
+    if (!scene) return;
+
+    const nextVersionNumber = (scene.versions?.length || 0) + 2; // base version is 1
+    const versionLabel = `Version ${nextVersionNumber}`;
+
+    const nextVersions = [
+      {
+        id: `ver-${Date.now()}`,
+        title: versionLabel,
+        label: versionLabel,
+        text: editorContent || "",
+        createdAt: new Date().toISOString(),
+      },
+      ...(scene.versions || []),
+    ];
+
+    await updateScene(projectId, selectedChapter.id, editorId, { versions: nextVersions });
+    setScenes((prev) =>
+      prev.map((s) => (s.id === editorId ? { ...s, versions: nextVersions } : s))
+    );
+    setEditorVersionId(nextVersions[0].id);
+    setIsDirty(false);
+    setSaveStatus("saved");
+  };
+
+  const addVersionToManuscript = async () => {
+    if (editorType !== "scene" || !editorId) return;
+    const scene = scenes.find((s) => s.id === editorId);
+    if (!scene) return;
+
+    if (editorVersionId === BASE_VERSION_ID) {
+      // Publish the base scene (also update base content)
+      await updateScene(projectId, selectedChapter.id, editorId, {
+        text: editorContent,
+        title: editorTitle,
+        manuscriptText: editorContent,
+        manuscriptTitle: editorTitle,
+        activeVersionId: BASE_VERSION_ID,
+      });
+
+      setScenes((prev) =>
+        prev.map((s) =>
+          s.id === editorId
+            ? {
+                ...s,
+                text: editorContent,
+                title: editorTitle,
+                manuscriptText: editorContent,
+                manuscriptTitle: editorTitle,
+                activeVersionId: BASE_VERSION_ID,
+              }
+            : s
+        )
+      );
+    } else {
+      // Publish a specific version (keep base title/text intact)
+      const updatedVersions = (scene.versions || []).map((v) =>
+        v.id === editorVersionId
+          ? { ...v, title: editorTitle, label: editorTitle, text: editorContent }
+          : v
+      );
+      const selectedVersion = updatedVersions.find((v) => v.id === editorVersionId);
+      const manuscriptTitle = selectedVersion?.title || selectedVersion?.label || scene.title;
+      const manuscriptText = selectedVersion?.text || scene.text;
+
+      await updateScene(projectId, selectedChapter.id, editorId, {
+        manuscriptText,
+        manuscriptTitle,
+        activeVersionId: editorVersionId,
+        versions: updatedVersions,
+      });
+
+      setScenes((prev) =>
+        prev.map((s) =>
+          s.id === editorId
+            ? {
+                ...s,
+                manuscriptText,
+                manuscriptTitle,
+                activeVersionId: editorVersionId,
+                versions: updatedVersions,
+              }
+            : s
+        )
+      );
+    }
+
+    setIsDirty(false);
+    setSaveStatus("saved");
+  };
+
+  const deleteCurrentVersion = async () => {
+    if (editorType !== "scene" || !editorId) return;
+    if (editorVersionId === BASE_VERSION_ID) return;
+    const scene = scenes.find((s) => s.id === editorId);
+    if (!scene) return;
+
+    const remaining = (scene.versions || []).filter((v) => v.id !== editorVersionId);
+    const activeVersionId =
+      scene.activeVersionId === editorVersionId ? BASE_VERSION_ID : scene.activeVersionId;
+
+    await updateScene(projectId, selectedChapter.id, editorId, {
+      versions: remaining,
+      activeVersionId,
+    });
+
+    const baseTitle = scene.title || "Untitled Scene";
+    const baseText = scene.text || "";
+    const nextVersionId = activeVersionId || BASE_VERSION_ID;
+    const nextTitle = nextVersionId === BASE_VERSION_ID ? baseTitle : editorTitle;
+    const nextText = nextVersionId === BASE_VERSION_ID ? baseText : editorContent;
+
+    setScenes((prev) =>
+      prev.map((s) =>
+        s.id === editorId
+          ? { ...s, versions: remaining, activeVersionId, title: baseTitle, text: baseText }
+          : s
+      )
+    );
+
+    setEditorVersionId(nextVersionId);
+    setEditorTitle(nextTitle);
+    setEditorContent(nextText);
+    setIsDirty(false);
+    setSaveStatus("saved");
   };
 
   const getPairs = () => {
@@ -291,6 +507,11 @@ export default function ChaptersView() {
             }}
             canMoveUp={index > 0}
             canMoveDown={index < scenes.length - 1}
+            activeVersionLabel={getVersionLabel(pair.scene, pair.scene.activeVersionId)}
+            versionOptions={getVersionOptions(pair.scene)}
+            activeVersionId={pair.scene.activeVersionId}
+            onSelectVersion={(versionId) => handleSelectVersion(pair.scene.id, versionId)}
+            displayContent={getDisplayContent(pair.scene)}
           />
 
           {pair.beat ? (
@@ -329,6 +550,11 @@ export default function ChaptersView() {
             }}
             canMoveUp={index > 0}
             canMoveDown={index < scenes.length - 1}
+            activeVersionLabel={getVersionLabel(scene, scene.activeVersionId)}
+            versionOptions={getVersionOptions(scene)}
+            activeVersionId={scene.activeVersionId}
+            onSelectVersion={(versionId) => handleSelectVersion(scene.id, versionId)}
+            displayContent={getDisplayContent(scene)}
           />
         </div>
       ));
@@ -353,6 +579,12 @@ export default function ChaptersView() {
       });
     }
   };
+  const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
+  const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
+  const activeVersionLabel =
+    currentScene && currentScene.activeVersionId
+      ? getVersionLabel(currentScene, currentScene.activeVersionId)
+      : "Version 1";
 
   return (
     <div className="chapters-view-container">
@@ -374,9 +606,8 @@ export default function ChaptersView() {
               {chapters.map((chapter) => (
                 <div
                   key={chapter.id}
-                  className={`chapter-dropdown-item ${
-                    selectedChapter?.id === chapter.id ? "active" : ""
-                  }`}
+                  className={`chapter-dropdown-item ${selectedChapter?.id === chapter.id ? "active" : ""
+                    }`}
                   onClick={() => {
                     loadChapter(chapter);
                     setDropdownOpen(false);
@@ -488,14 +719,59 @@ export default function ChaptersView() {
                   type="text"
                   className="editor-title-input"
                   value={editorTitle}
-                  onChange={(e) => setEditorTitle(e.target.value)}
-                  onBlur={saveEditor}
-                  placeholder={`${editorType === "scene" ? "Scene" : "Beat"} title...`}
+                  onChange={(e) => {
+                    setEditorTitle(e.target.value);
+                    setIsDirty(true);
+                    setSaveStatus("dirty");
+                  }}
+                  onBlur={() => {
+                    if (editorType === "scene") return;
+                    saveEditor();
+                  }}
+                  placeholder={(editorType === "scene" ? "Scene" : "Beat") + " title..."}
                 />
+                {editorType === "scene" && (
+                  <div className="version-select-row">
+                    <select
+                      className="version-select"
+                      value={editorVersionId || BASE_VERSION_ID}
+                      onChange={(e) => handleSelectVersion(editorId, e.target.value)}
+                    >
+                      {editorVersionOptions.map((opt, idx) => (
+                        <option key={opt.id || idx} value={opt.id || BASE_VERSION_ID}>
+                          {opt.label || opt.title || "Version " + (idx + 1)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="version-badge">In manuscript: {activeVersionLabel}</div>
+                  </div>
+                )}
                 <div className="editor-toolbar">
-                  <button className="toolbar-btn" onClick={saveEditor}>
-                    💾 Save
-                  </button>
+                  {editorType === "scene" ? (
+                    <>
+                      <button className="toolbar-btn" onClick={saveCurrentVersion}>
+                        💾 Save
+                      </button>
+                      <button className="toolbar-btn" onClick={saveNewVersion}>
+                        Save as New Version
+                      </button>
+                      <button className="toolbar-btn" onClick={addVersionToManuscript}>
+                        Add to Manuscript
+                      </button>
+                      <button
+                        className="toolbar-btn delete"
+                        onClick={deleteCurrentVersion}
+                        disabled={editorVersionId === BASE_VERSION_ID}
+                        title={editorVersionId === BASE_VERSION_ID ? "Base version cannot be deleted" : "Delete this version"}
+                      >
+                        Delete Version
+                      </button>
+                    </>
+                  ) : (
+                    <button className="toolbar-btn" onClick={saveEditor}>
+                      💾 Save
+                    </button>
+                  )}
                   <button
                     className="toolbar-btn delete"
                     onClick={() => handleDeleteItem(editorType, editorId)}
@@ -543,16 +819,32 @@ export default function ChaptersView() {
 }
 
 // Scene Section Component
-function SceneSection({ scene, isEditing, onEdit, onDelete, onReorder, canMoveUp, canMoveDown }) {
+function SceneSection({
+  scene,
+  isEditing,
+  onEdit,
+  onDelete,
+  onReorder,
+  canMoveUp,
+  canMoveDown,
+  activeVersionLabel,
+  versionOptions,
+  activeVersionId,
+  onSelectVersion,
+  displayContent,
+}) {
   return (
     <div
-      className={`card-section scene ${isEditing ? "editing" : ""}`}
+      className={"card-section scene " + (isEditing ? "editing" : "")}
       onClick={onEdit}
     >
       <div className="card-type-label scene">📄 Scene</div>
       <div className="card-header">
         <div className="card-title">
           <div className="card-title-text">{scene.title || "Untitled Scene"}</div>
+          <div className="card-meta version-subtitle">
+            {activeVersionLabel ? activeVersionLabel : "Version 1"}
+          </div>
           {scene.location && (
             <div className="card-meta">
               {scene.location} • {scene.time || "Unspecified time"}
@@ -698,3 +990,5 @@ function LinkSelectorModal({ scenes, currentBeatId, onLink, onClose }) {
     </div>
   );
 }
+
+// Scene Versions Modal Component

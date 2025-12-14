@@ -153,6 +153,76 @@ export function FirestoreProvider({ children }) {
     };
 
     // --------------------------
+    // MANUSCRIPT COMMENTS
+    // --------------------------
+    const getComments = async (projectId, chapterId) => {
+        const qRef = query(
+            collection(db, "projects", projectId, "chapters", chapterId, "comments"),
+            orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(qRef);
+        return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    };
+
+    const createComment = async (projectId, chapterId, data) => {
+        return addDoc(
+            collection(db, "projects", projectId, "chapters", chapterId, "comments"),
+            {
+                ...data,
+                createdAt: new Date(),
+            }
+        );
+    };
+
+    const deleteComment = async (projectId, chapterId, commentId) => {
+        const ref = doc(
+            db,
+            "projects",
+            projectId,
+            "chapters",
+            chapterId,
+            "comments",
+            commentId
+        );
+        return deleteDoc(ref);
+    };
+
+    // --------------------------
+    // MANUSCRIPT HIGHLIGHTS
+    // --------------------------
+    const getHighlights = async (projectId, chapterId) => {
+        const qRef = query(
+            collection(db, "projects", projectId, "chapters", chapterId, "highlights"),
+            orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(qRef);
+        return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    };
+
+    const createHighlight = async (projectId, chapterId, data) => {
+        return addDoc(
+            collection(db, "projects", projectId, "chapters", chapterId, "highlights"),
+            {
+                ...data,
+                createdAt: new Date(),
+            }
+        );
+    };
+
+    const deleteHighlight = async (projectId, chapterId, highlightId) => {
+        const ref = doc(
+            db,
+            "projects",
+            projectId,
+            "chapters",
+            chapterId,
+            "highlights",
+            highlightId
+        );
+        return deleteDoc(ref);
+    };
+
+    // --------------------------
     // NEW: BEAT-SCENE LINKING
     // --------------------------
     
@@ -239,10 +309,18 @@ export function FirestoreProvider({ children }) {
             updateScene,
             deleteScene,
 
-            // NEW: Beat-Scene linking functions
+            // Beat-Scene linking functions
             linkBeatToScene,
             unlinkBeat,
             reorderScenesWithBeats,
+
+            // Manuscript comments and highlights
+            getComments,
+            createComment,
+            deleteComment,
+            getHighlights,
+            createHighlight,
+            deleteHighlight,
         }}>
             {children}
         </FirestoreContext.Provider>
