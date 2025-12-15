@@ -60,13 +60,13 @@ export function useChapterEditor({
 
         lastSaveRef.current = { title: editorTitle, content: editorContent };
         setIsDirty(false);
-        setSaveStatus("saved");
+        setSaveStatus("autosaved");
         setTimeout(() => setSaveStatus("idle"), 2000);
       } catch (error) {
         console.error("Autosave error:", error);
         setSaveStatus("error");
       }
-    }, 10000);
+    }, 5000);
 
     return () => {
       if (saveIntervalRef.current) {

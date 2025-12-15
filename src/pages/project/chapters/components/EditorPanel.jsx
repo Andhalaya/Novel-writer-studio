@@ -26,7 +26,7 @@ export default function EditorPanel({
   if (!editorType) {
     return (
       <div className="editor-empty">
-        <div className="editor-empty-icon">No selection</div>
+        <div className="editor-empty-icon">📖</div>
         <p className="editor-empty-text">Select a scene or beat to edit</p>
       </div>
     );
