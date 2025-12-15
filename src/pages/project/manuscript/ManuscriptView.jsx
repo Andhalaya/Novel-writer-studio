@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./ManuscriptView.css";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
@@ -49,7 +49,6 @@ export default function ManuscriptView() {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState([]); // { id, sceneId, text, selection, position }
   const [highlights, setHighlights] = useState([]); // { id, sceneId, text, color }
-
   const manuscriptRef = useRef(null);
 
   useEffect(() => {
@@ -97,12 +96,85 @@ export default function ManuscriptView() {
     return text.trim().split(/\s+/).length;
   };
 
+  const exportChapter = (chapterTitle, chapterScenes, chapterIndex = null) => {
+    const lines = [];
+    const headingPrefix =
+      chapterIndex !== null ? `Chapter ${chapterIndex + 1}: ` : "";
+    lines.push(`${headingPrefix}${chapterTitle || "Untitled Chapter"}`);
+    lines.push("");
+    chapterScenes.forEach((scene, idx) => {
+      const display = getDisplayScene(scene);
+      lines.push(display.text || "");
+      if (idx !== chapterScenes.length - 1) {
+        lines.push("");
+      }
+    });
+    return lines.join("\n");
+  };
+
+  const triggerDownload = (filename, content) => {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportManuscript = useCallback(
+    async (scope = "chapter") => {
+      if (!selectedChapter) return;
+      try {
+        if (scope === "chapter") {
+          const content = exportChapter(
+            selectedChapter.title,
+            scenes,
+            chapterNumber ? chapterNumber - 1 : null
+          );
+          triggerDownload(`${selectedChapter.title || "chapter"}.txt`, content);
+        } else {
+          // Export full novel: fetch scenes for every chapter
+          const chaptersSorted = [...chapters].sort((a, b) => a.orderIndex - b.orderIndex);
+          const chapterScenesList = await Promise.all(
+            chaptersSorted.map((ch) => getScenes(projectId, ch.id))
+          );
+
+          let novelContent = "";
+          chaptersSorted.forEach((ch, idx) => {
+            const chapterContent = exportChapter(ch.title, chapterScenesList[idx], idx);
+            novelContent += chapterContent;
+            if (idx !== chaptersSorted.length - 1) {
+              novelContent += "\n\n";
+            }
+          });
+          triggerDownload("novel.txt", novelContent.trim());
+        }
+      } catch (err) {
+        console.error("Error exporting manuscript:", err);
+        alert("Could not export. Please try again.");
+      }
+    },
+    [selectedChapter, scenes, chapterNumber, chapters, getScenes, projectId]
+  );
+
   const getTotalWordCount = () => {
     return scenes.reduce((total, scene) => {
       const display = getDisplayScene(scene);
       return total + getWordCount(display.text);
     }, 0);
   };
+
+  useEffect(() => {
+    const handleExportEvent = (e) => {
+      const scope = e.detail?.scope || "chapter";
+      handleExportManuscript(scope);
+    };
+    window.addEventListener("export-manuscript", handleExportEvent);
+    return () => window.removeEventListener("export-manuscript", handleExportEvent);
+  }, [handleExportManuscript]);
 
   // Handle text selection for comments/highlights
   const handleTextSelection = () => {
@@ -408,7 +480,8 @@ export default function ManuscriptView() {
         )}
         {/* Beat Timeline Sidebar */}
             <div className="beat-timeline">
-              <div className="timeline-header">Story Beats</div>
+              <div className="timeline-header">
+                <span>Story Beats</span>
               {scenes.map((scene, idx) => {
                 const beat = getBeatForScene(scene.id);
                 const display = getDisplayScene(scene);
@@ -511,5 +584,6 @@ export default function ManuscriptView() {
         </div>
       )}
     </div>
-  );
+    </div>
+  )
 }

@@ -8,6 +8,8 @@ export default function TopNav({
   setDropdownOpen,
   chapters,
   onSelectChapter,
+  onAddChapter,
+  onDeleteChapter,
   viewMode,
   setViewMode,
   handleAdd,
@@ -43,6 +45,8 @@ export default function TopNav({
                 </div>
               </div>
             ))}
+           
+            
           </div>
         )}
       </div>
@@ -68,12 +72,33 @@ export default function TopNav({
         </button>
       </div>
 
-      <div className="nav-spacer" />
-
+      <div className="nav-spacer" /> 
+      <button
+        type="button"
+        className="add-chapter-btn"
+        onClick={() => {
+        if (onAddChapter) onAddChapter();
+          setDropdownOpen(false);
+        }}
+      >
+        + Add Chapter
+      </button>
       <button className="add-btn" onClick={handleAdd}>
         <Plus size={18} />
         <span>{addButtonText}</span>
       </button>
+      {selectedChapter && (
+              <button
+                type="button"
+                className="delete-chapter-btn"
+                onClick={() => {
+                  if (onDeleteChapter) onDeleteChapter(selectedChapter);
+                  setDropdownOpen(false);
+                }}
+              >
+                Delete "{selectedChapter.title}"
+              </button>
+      )}     
     </div>
   );
 }

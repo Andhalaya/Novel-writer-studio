@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
   Database,
@@ -7,6 +7,7 @@ import {
   Folder,
   LogOut,
   LayoutDashboard,
+  Download
 } from "lucide-react";
 
 import { useProject } from "../../../context/ProjectContext.jsx";
@@ -29,8 +30,14 @@ function NavItem({ to, icon: Icon, label, collapsed }) {
 
 function SideBar({ collapsed }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const { currentProject, projects, selectProject, isProjectSelected } = useProject();
+
+  const handleExport = (scope) => {
+    // Notify ManuscriptView to export using its current context (chapter/scenes)
+    window.dispatchEvent(new CustomEvent("export-manuscript", { detail: { scope } }));
+  };
 
   const handleProjectChange = (e) => {
     const id = e.target.value;
@@ -106,6 +113,26 @@ function SideBar({ collapsed }) {
               label="Manuscript"
               collapsed={collapsed}
             />
+            {/* Export controls shown only on manuscript route */}
+            {location.pathname.includes("/manuscript") && (
+              <div className="export-controls">
+                <Download size={18} />
+                <button
+                  className="export-control-btn"
+                  onClick={() => handleExport("chapter")}
+                  title="Export current chapter"
+                >
+                  Export Chapter
+                </button>
+                <button
+                  className="export-control-btn"
+                  onClick={() => handleExport("novel")}
+                  title="Export full novel"
+                >
+                  Export Novel
+                </button>
+              </div>
+            )}
           </>
         )}
       </nav>
