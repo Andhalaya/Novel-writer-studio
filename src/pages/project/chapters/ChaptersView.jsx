@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import "./ChaptersView.css";
 import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
@@ -53,10 +53,11 @@ export default function ChaptersView() {
     unlinkBeat,
     reorderScenesWithBeats,
   });
+
   const [viewMode, setViewMode] = useState("both");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [showLinkSelector, setShowLinkSelector] = useState(null); // { beatId: string }
+  const [showLinkSelector, setShowLinkSelector] = useState(null);
 
   const {
     editorTitle,
@@ -89,8 +90,8 @@ export default function ChaptersView() {
 
   const chapterNumber = selectedChapter
     ? chapters
-      .sort((a, b) => a.orderIndex - b.orderIndex)
-      .findIndex((c) => c.id === selectedChapter.id) + 1
+        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
 
   const handleSelectChapter = async (chapter) => {
@@ -98,37 +99,45 @@ export default function ChaptersView() {
     setEditingItem(null);
   };
 
-  const openEditor = (type, item, versionId = null) => {
+  const openEditor = useCallback((type, item, versionId = null) => {
     loadIntoEditor(type, item, versionId, setEditingItem);
-  };
+  }, [loadIntoEditor]);
 
   const handleDeleteItem = async (type, id) => {
-    if (!window.confirm(`Delete this ${type}?`)) return;
+    if (!window.confirm(`¿Eliminar este ${type === "scene" ? "escena" : "beat"}?`)) return;
 
-    if (type === "scene") {
-    await deleteScene(projectId, selectedChapter.id, id);
-    setScenes((prev) => prev.filter((s) => s.id !== id));
+    try {
+      if (type === "scene") {
+        // Primero desenlazar todos los beats vinculados
+        const linkedBeats = beats.filter(b => b.linkedSceneId === id);
+        
+        for (const beat of linkedBeats) {
+          await unlinkBeat(projectId, selectedChapter.id, beat.id);
+        }
 
-      // Unlink any beats that were linked to this scene
-      const linkedBeats = beats.filter(b => b.linkedSceneId === id);
-      for (const beat of linkedBeats) {
-        await unlinkBeat(projectId, selectedChapter.id, beat.id);
+        // Eliminar la escena
+        await deleteScene(projectId, selectedChapter.id, id);
+        setScenes((prev) => prev.filter((s) => s.id !== id));
+
+        // Recargar beats desde Firestore para asegurar sincronización
+        const updatedBeats = await getBeats(projectId, selectedChapter.id);
+        setBeats(updatedBeats);
+      } else {
+        await deleteBeat(projectId, selectedChapter.id, id);
+        setBeats((prev) => prev.filter((b) => b.id !== id));
       }
-      setBeats((prev) => prev.map(b =>
-        b.linkedSceneId === id ? { ...b, linkedSceneId: null } : b
-      ));
-    } else {
-      await deleteBeat(projectId, selectedChapter.id, id);
-      setBeats((prev) => prev.filter((b) => b.id !== id));
-    }
 
-    if (editorId === id) {
-      setEditingItem(null);
+      if (editorId === id) {
+        setEditingItem(null);
+      }
+    } catch (error) {
+      console.error(`Error al eliminar ${type}:`, error);
+      alert(`Error al eliminar. Por favor, inténtalo de nuevo.`);
     }
   };
 
-  const getPairs = () => {
-    // Create pairs based on scene order and their linked beats
+  // Memorizar los pares para evitar recalcular en cada render
+  const pairs = useMemo(() => {
     return scenes.map((scene) => {
       const linkedBeat = beats.find((b) => b.linkedSceneId === scene.id);
       return {
@@ -136,7 +145,7 @@ export default function ChaptersView() {
         beat: linkedBeat || null,
       };
     });
-  };
+  }, [scenes, beats]);
 
   const getAddButtonText = () => {
     switch (viewMode) {
@@ -163,43 +172,128 @@ export default function ChaptersView() {
 
   const handleAddScene = async () => {
     if (!selectedChapter) return;
-    const orderIndex = scenes.length;
-    const newSceneData = {
-      title: `Scene ${orderIndex + 1}`,
-      text: "",
-      orderIndex,
-    };
-    const docRef = await createScene(projectId, selectedChapter.id, newSceneData);
-    const newScene = { id: docRef.id, ...newSceneData };
-    setScenes((prev) => [...prev, newScene]);
-    openEditor("scene", newScene);
+    
+    try {
+      const orderIndex = scenes.length;
+      const newSceneData = {
+        title: `Scene ${orderIndex + 1}`,
+        text: "",
+        orderIndex,
+      };
+      const docRef = await createScene(projectId, selectedChapter.id, newSceneData);
+      const newScene = { id: docRef.id, ...newSceneData };
+      setScenes((prev) => [...prev, newScene]);
+      openEditor("scene", newScene);
+      return newScene;
+    } catch (error) {
+      console.error("Error al crear escena:", error);
+      alert("Error al crear la escena. Inténtalo de nuevo.");
+      return null;
+    }
   };
 
   const handleAddBeat = async () => {
     if (!selectedChapter) return;
-    const orderIndex = beats.length;
-    const newBeatData = {
-      title: `Beat ${orderIndex + 1}`,
-      description: "",
-      orderIndex,
-      linkedSceneId: null,
-    };
-    const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
-    const newBeat = { id: docRef.id, ...newBeatData };
-    setBeats((prev) => [...prev, newBeat]);
-    openEditor("beat", newBeat);
+    
+    try {
+      const orderIndex = beats.length;
+      const newBeatData = {
+        title: `Beat ${orderIndex + 1}`,
+        description: "",
+        orderIndex,
+        linkedSceneId: null,
+      };
+      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
+      const newBeat = { id: docRef.id, ...newBeatData };
+      setBeats((prev) => [...prev, newBeat]);
+      openEditor("beat", newBeat);
+      return newBeat;
+    } catch (error) {
+      console.error("Error al crear beat:", error);
+      alert("Error al crear el beat. Inténtalo de nuevo.");
+      return null;
+    }
   };
 
+  // Optimizado para crear en paralelo
   const handleAddSceneAndBeatPair = async () => {
-    await handleAddScene();
-    await handleAddBeat();
+    if (!selectedChapter) return;
+
+    try {
+      const orderIndexScene = scenes.length;
+      const orderIndexBeat = beats.length;
+
+      const [sceneRef, beatRef] = await Promise.all([
+        createScene(projectId, selectedChapter.id, {
+          title: `Scene ${orderIndexScene + 1}`,
+          text: "",
+          orderIndex: orderIndexScene,
+        }),
+        createBeat(projectId, selectedChapter.id, {
+          title: `Beat ${orderIndexBeat + 1}`,
+          description: "",
+          orderIndex: orderIndexBeat,
+          linkedSceneId: null,
+        })
+      ]);
+
+      const newScene = {
+        id: sceneRef.id,
+        title: `Scene ${orderIndexScene + 1}`,
+        text: "",
+        orderIndex: orderIndexScene,
+      };
+
+      const newBeat = {
+        id: beatRef.id,
+        title: `Beat ${orderIndexBeat + 1}`,
+        description: "",
+        orderIndex: orderIndexBeat,
+        linkedSceneId: null,
+      };
+
+      setScenes((prev) => [...prev, newScene]);
+      setBeats((prev) => [...prev, newBeat]);
+      
+      // Abrir el editor con la nueva escena
+      openEditor("scene", newScene);
+    } catch (error) {
+      console.error("Error al crear par escena-beat:", error);
+      alert("Error al crear el par. Inténtalo de nuevo.");
+    }
+  };
+
+  // Función auxiliar para crear y vincular beat a una escena específica
+  const handleAddBeatToScene = async (sceneId) => {
+    if (!selectedChapter) return;
+
+    try {
+      const orderIndex = beats.length;
+      const newBeatData = {
+        title: `Beat ${orderIndex + 1}`,
+        description: "",
+        orderIndex,
+        linkedSceneId: null,
+      };
+
+      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
+      const newBeat = { id: docRef.id, ...newBeatData };
+      setBeats((prev) => [...prev, newBeat]);
+
+      // Vincular automáticamente a la escena
+      await handleLinkBeat(newBeat.id, sceneId);
+
+      openEditor("beat", newBeat);
+    } catch (error) {
+      console.error("Error al crear y vincular beat:", error);
+      alert("Error al crear el beat. Inténtalo de nuevo.");
+    }
   };
 
   const renderCards = () => {
     if (viewMode === "both") {
-      const pairs = getPairs();
       return pairs.map((pair, index) => (
-        <div key={`pair-${index}`} className="content-card">
+        <div key={`pair-${pair.scene.id}`} className="content-card">
           <SceneSection
             scene={pair.scene}
             isEditing={editingItem?.type === "scene" && editingItem?.id === pair.scene.id}
@@ -232,7 +326,10 @@ export default function ChaptersView() {
             />
           ) : (
             <div className="card-section empty-section">
-              <button className="add-empty-btn">
+              <button 
+                className="add-empty-btn"
+                onClick={() => handleAddBeatToScene(pair.scene.id)}
+              >
                 <Plus size={18} />
                 <span>Add Beat</span>
               </button>
@@ -285,6 +382,7 @@ export default function ChaptersView() {
       });
     }
   };
+
   const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
   const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
   const activeVersionLabel =
@@ -294,7 +392,7 @@ export default function ChaptersView() {
 
   return (
     <div className="chapters-view-container">
-            <TopNav
+      <TopNav
         selectedChapter={selectedChapter}
         chapterNumber={chapterNumber}
         dropdownOpen={dropdownOpen}
@@ -305,14 +403,17 @@ export default function ChaptersView() {
         setViewMode={setViewMode}
         handleAdd={handleAdd}
         addButtonText={getAddButtonText()}
-      />      
-  <div className="main-content">
+      />
+      
+      <div className="main-content">
         <CardsPanel
           selectedChapter={selectedChapter}
           scenes={scenes}
           beats={beats}
           renderCards={renderCards}
-        /><div className="editor-panel">
+        />
+        
+        <div className="editor-panel">
           <EditorPanel
             editorType={editorType}
             editorTitle={editorTitle}
@@ -335,18 +436,24 @@ export default function ChaptersView() {
             editorId={editorId}
           />
         </div>
-      {/* Link Selector Modal */}
-      {showLinkSelector && (
-        <LinkSelectorModal
-          scenes={scenes}
-          currentBeatId={showLinkSelector.beatId}
-          onLink={async (sceneId) => {
-            await handleLinkBeat(showLinkSelector.beatId, sceneId);
-            setShowLinkSelector(null);
-          }}
-          onClose={() => setShowLinkSelector(null)}
-        />
-      )}
+
+        {/* Link Selector Modal */}
+        {showLinkSelector && (
+          <LinkSelectorModal
+            scenes={scenes}
+            currentBeatId={showLinkSelector.beatId}
+            onLink={async (sceneId) => {
+              try {
+                await handleLinkBeat(showLinkSelector.beatId, sceneId);
+                setShowLinkSelector(null);
+              } catch (error) {
+                console.error("Error al vincular beat:", error);
+                alert("Error al vincular. Inténtalo de nuevo.");
+              }
+            }}
+            onClose={() => setShowLinkSelector(null)}
+          />
+        )}
       </div>
     </div>
   );

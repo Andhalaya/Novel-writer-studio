@@ -30,7 +30,7 @@ export default function SceneSection({
             {displayContent?.title || scene.title || "Untitled Scene"}
           </div>
           <div className="card-meta version-subtitle">
-            {activeVersionLabel ? "Current: " + activeVersionLabel : "Version 1"}
+            {activeVersionLabel ? activeVersionLabel : "Version 1"}
           </div>
           {scene.location && (
             <div className="card-meta">

@@ -55,7 +55,6 @@ export default function EditorPanel({
         />
         {editorType === "scene" && (
           <div className="version-select-row">
-            <label className="version-label">Version</label>
             <select
               className="version-select"
               value={editorVersionId || BASE_VERSION_ID}

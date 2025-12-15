@@ -98,7 +98,10 @@ export default function ManuscriptView() {
   };
 
   const getTotalWordCount = () => {
-    return scenes.reduce((total, scene) => total + getWordCount(scene.text), 0);
+    return scenes.reduce((total, scene) => {
+      const display = getDisplayScene(scene);
+      return total + getWordCount(display.text);
+    }, 0);
   };
 
   // Handle text selection for comments/highlights
@@ -356,6 +359,7 @@ export default function ManuscriptView() {
                   (h) => h.sceneId === scene.id
                 );
 
+                const display = getDisplayScene(scene);
                 return (
                   <div key={scene.id} className="manuscript-scene">
                     <div className="scene-separator">
@@ -363,9 +367,9 @@ export default function ManuscriptView() {
                     </div>
 
                     <div className="scene-content">
-                      {scene.text ? (
+                      {display.text ? (
                         <p className="scene-text" data-scene-id={scene.id}>
-                          {renderHighlightedText(scene.text, sceneHighlights)}
+                          {renderHighlightedText(display.text, sceneHighlights)}
                         </p>
                       ) : (
                         <p className="scene-text empty">
@@ -407,12 +411,13 @@ export default function ManuscriptView() {
               <div className="timeline-header">Story Beats</div>
               {scenes.map((scene, idx) => {
                 const beat = getBeatForScene(scene.id);
+                const display = getDisplayScene(scene);
                 return (
                   <div key={scene.id} className="timeline-item">
                     <div className="timeline-marker">{idx + 1}</div>
                     <div className="timeline-content">
                       <div className="timeline-scene-title">
-                        {scene.title || `Scene ${idx + 1}`}
+                        {display.title || `Scene ${idx + 1}`}
                       </div>
                       {beat && (
                         <div className="timeline-beat">
@@ -427,7 +432,7 @@ export default function ManuscriptView() {
                         </div>
                       )}
                       <div className="timeline-meta">
-                        {getWordCount(scene.text)} words
+                        {getWordCount(display.text)} words
                       </div>
                       <button
                         className="timeline-edit-btn"
