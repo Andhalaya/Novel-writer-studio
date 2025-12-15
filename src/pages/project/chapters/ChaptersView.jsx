@@ -16,6 +16,7 @@ import SceneSection from "./components/SceneSection";
 import BeatSection from "./components/BeatSection";
 import LinkSelectorModal from "./components/LinkSelectorModal";
 import EditorPanel from "./components/EditorPanel";
+import { useChapterData } from "../../../hooks/useChapterData";
 
 export default function ChaptersView() {
   const { projectId } = useParams();
@@ -35,10 +36,28 @@ export default function ChaptersView() {
     reorderScenesWithBeats,
   } = useFirestore();
 
-  const [chapters, setChapters] = useState([]);
-  const [selectedChapter, setSelectedChapter] = useState(null);
-  const [scenes, setScenes] = useState([]);
-  const [beats, setBeats] = useState([]);
+  const {
+    chapters,
+    setChapters,
+    selectedChapter,
+    setSelectedChapter,
+    scenes,
+    setScenes,
+    beats,
+    setBeats,
+    loadChapters,
+    loadChapter,
+    handleLinkBeat,
+    handleUnlinkBeat,
+    handleSceneReorder,
+  } = useChapterData(projectId, {
+    getChapters,
+    getScenes,
+    getBeats,
+    linkBeatToScene,
+    unlinkBeat,
+    reorderScenesWithBeats,
+  });
   const [viewMode, setViewMode] = useState("both");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
@@ -55,10 +74,6 @@ export default function ChaptersView() {
   const [editorVersionId, setEditorVersionId] = useState(BASE_VERSION_ID);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
-
-  useEffect(() => {
-    loadChapters();
-  }, [projectId]);
 
   useEffect(() => {
     if (!editorType || !editorId || !selectedChapter) return;
@@ -95,13 +110,11 @@ export default function ChaptersView() {
     projectId,
   ]);
 
-  const loadChapters = async () => {
-    const chaptersData = await getChapters(projectId);
-    setChapters(chaptersData);
-    if (chaptersData.length > 0 && !selectedChapter) {
-      loadChapter(chaptersData[0]);
+  useEffect(() => {
+    if (selectedChapter) {
+      setChapterTitleDraft(selectedChapter.title);
     }
-  };
+  }, [selectedChapter]);
 
   const chapterNumber = selectedChapter
     ? chapters
@@ -109,23 +122,9 @@ export default function ChaptersView() {
       .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
 
-  const loadChapter = async (chapter) => {
-    setSelectedChapter(chapter);
+  const handleSelectChapter = async (chapter) => {
+    await loadChapter(chapter);
     setChapterTitleDraft(chapter.title);
-
-    const [scenesData, beatsData] = await Promise.all([
-      getScenes(projectId, chapter.id),
-      getBeats(projectId, chapter.id),
-    ]);
-
-    setScenes(
-      scenesData.map((s) => ({
-        ...s,
-        activeVersionId: s.activeVersionId || BASE_VERSION_ID,
-      }))
-    );
-    setBeats(beatsData);
-
     setEditingItem(null);
     setEditorType(null);
   };
@@ -180,8 +179,8 @@ export default function ChaptersView() {
     if (!window.confirm(`Delete this ${type}?`)) return;
 
     if (type === "scene") {
-      await deleteScene(projectId, selectedChapter.id, id);
-      setScenes((prev) => prev.filter((s) => s.id !== id));
+    await deleteScene(projectId, selectedChapter.id, id);
+    setScenes((prev) => prev.filter((s) => s.id !== id));
 
       // Unlink any beats that were linked to this scene
       const linkedBeats = beats.filter(b => b.linkedSceneId === id);
@@ -201,49 +200,6 @@ export default function ChaptersView() {
       setEditorId(null);
       setEditingItem(null);
     }
-  };
-
-  // Handle linking a beat to a scene
-  const handleLinkBeat = async (beatId, sceneId) => {
-    // Check if scene is already linked to another beat
-    const existingLink = beats.find(b => b.linkedSceneId === sceneId && b.id !== beatId);
-    if (existingLink) {
-      alert("This scene is already linked to another beat. Each scene can only be linked to one beat.");
-      return;
-    }
-
-    await linkBeatToScene(projectId, selectedChapter.id, beatId, sceneId);
-
-    setBeats((prev) =>
-      prev.map((b) => (b.id === beatId ? { ...b, linkedSceneId: sceneId } : b))
-    );
-
-    setShowLinkSelector(null);
-  };
-
-  // Handle unlinking a beat
-  const handleUnlinkBeat = async (beatId) => {
-    await unlinkBeat(projectId, selectedChapter.id, beatId);
-
-    setBeats((prev) =>
-      prev.map((b) => (b.id === beatId ? { ...b, linkedSceneId: null } : b))
-    );
-  };
-
-  // Handle scene reordering with drag and drop
-  const handleSceneReorder = async (dragIndex, dropIndex) => {
-    const reordered = [...scenes];
-    const [removed] = reordered.splice(dragIndex, 1);
-    reordered.splice(dropIndex, 0, removed);
-
-    setScenes(reordered);
-
-    // Update both scenes and linked beats
-    await reorderScenesWithBeats(projectId, selectedChapter.id, reordered, beats);
-
-    // Reload to get updated beat order
-    const beatsData = await getBeats(projectId, selectedChapter.id);
-    setBeats(beatsData);
   };
 
   const handleSelectVersion = (sceneId, versionId) => {
@@ -606,7 +562,7 @@ export default function ChaptersView() {
                   className={`chapter-dropdown-item ${selectedChapter?.id === chapter.id ? "active" : ""
                     }`}
                   onClick={() => {
-                    loadChapter(chapter);
+                    handleSelectChapter(chapter);
                     setDropdownOpen(false);
                   }}
                 >
@@ -728,7 +684,10 @@ export default function ChaptersView() {
         <LinkSelectorModal
           scenes={scenes}
           currentBeatId={showLinkSelector.beatId}
-          onLink={(sceneId) => handleLinkBeat(showLinkSelector.beatId, sceneId)}
+          onLink={async (sceneId) => {
+            await handleLinkBeat(showLinkSelector.beatId, sceneId);
+            setShowLinkSelector(null);
+          }}
           onClose={() => setShowLinkSelector(null)}
         />
       )}
