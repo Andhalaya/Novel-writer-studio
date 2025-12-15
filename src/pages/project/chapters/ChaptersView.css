@@ -201,6 +201,23 @@
   background: rgba(239, 68, 68, 0.08);
 }
 
+.outline-toggle-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.outline-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .chapter-dropdown-item {
   padding: 12px 16px;
   cursor: pointer;
@@ -316,12 +333,12 @@
 
 .card-header-wrapper.scene {
 background: #5ac1db;
-background: linear-gradient(90deg, #def8ff 0%, #5985ff 100%);
+background: linear-gradient(90deg, #e4f9ff 0%, #c4d5ff 100%);
 }
 
 .card-header-wrapper.beat {
   background: #c58aff;
-  background: linear-gradient(90deg, #f5ecff 0%, #8e59ff 100%);
+  background: linear-gradient(90deg, #f5ecff 0%, #d9c7ff 100%);
 }
 
 .panel-resizer {
@@ -726,10 +743,137 @@ background: linear-gradient(90deg, #def8ff 0%, #5985ff 100%);
 ==================================== */
 
 .editor-panel {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   background: var(--surface);
+}
+
+.outline-drawer {
+  width: 280px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-secondary);
+  transition: transform 0.2s ease, width 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.outline-drawer:not(.open) {
+  transform: translateX(100%);
+  width: 0;
+  border-left: none;
+  opacity: 0;
+}
+
+.outline-toggle {
+  padding: 10px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.outline-body {
+  padding: 12px;
+  overflow-y: auto;
+  height: calc(100% - 44px);
+}
+
+.outline-header {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.outline-chapter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.outline-chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.outline-caret-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.outline-chapter-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.outline-chapter-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outline-chapter-stats {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.outline-delete-btn {
+  background: transparent;
+  border: 1px solid var(--error);
+  color: var(--error);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.outline-scenes {
+  list-style: none;
+  padding: 6px 0 0 34px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outline-scene-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scene-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: inline-block;
 }
 
 .editor-header {

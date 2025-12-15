@@ -14,6 +14,7 @@ import LinkSelectorModal from "./components/LinkSelectorModal";
 import EditorPanel from "./components/EditorPanel";
 import CardsPanel from "./components/CardsPanel";
 import TopNav from "./components/TopNav";
+import OutlineDrawer from "./components/OutlineDrawer";
 import { useChapterData } from "../../../hooks/useChapterData";
 import { useChapterEditor } from "../../../hooks/useChapterEditor";
 
@@ -58,15 +59,14 @@ export default function ChaptersView() {
   });
 
   const [viewMode, setViewMode] = useState("both");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showLinkSelector, setShowLinkSelector] = useState(null);
   const [cardsWidth, setCardsWidth] = useState(30); // percentage
   const [isResizing, setIsResizing] = useState(false);
   const mainContentRef = useRef(null);
-  const [showChapterModal, setShowChapterModal] = useState(false);
-  const [newChapterTitle, setNewChapterTitle] = useState("");
-  const [chapterToDelete, setChapterToDelete] = useState(null);
+  const [outlineOpen, setOutlineOpen] = useState(true);
+  const [outlineExpanded, setOutlineExpanded] = useState({});
+  const [outlineScenes, setOutlineScenes] = useState({});
 
   const {
     editorTitle,
@@ -102,69 +102,6 @@ export default function ChaptersView() {
         .sort((a, b) => a.orderIndex - b.orderIndex)
         .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
-
-  const handleSelectChapter = async (chapter) => {
-    await loadChapter(chapter);
-    setEditingItem(null);
-  };
-
-  const handleAddChapter = () => {
-    const defaultTitle = `Chapter ${chapters.length + 1}`;
-    setNewChapterTitle(defaultTitle);
-    setShowChapterModal(true);
-  };
-
-  const handleCreateChapter = async () => {
-    const title = newChapterTitle.trim();
-    if (!title) {
-      alert("Please enter a chapter title.");
-      return;
-    }
-    try {
-      const nextOrder =
-        chapters.length > 0
-          ? Math.max(...chapters.map((c) => c.orderIndex || 0)) + 1
-          : 0;
-      const newChapterData = {
-        title,
-        orderIndex: nextOrder,
-      };
-      const docRef = await createChapter(projectId, newChapterData);
-      const newChapter = { id: docRef.id, ...newChapterData };
-      setChapters((prev) => [...prev, newChapter].sort((a, b) => a.orderIndex - b.orderIndex));
-      setShowChapterModal(false);
-      setNewChapterTitle("");
-      await loadChapter(newChapter);
-    } catch (error) {
-      console.error("Error creating chapter:", error);
-      alert("Could not create chapter. Please try again.");
-    }
-  };
-
-  const handleRequestDeleteChapter = (chapter) => {
-    setChapterToDelete(chapter);
-  };
-
-  const handleConfirmDeleteChapter = async () => {
-    if (!chapterToDelete) return;
-    try {
-      await deleteChapter(projectId, chapterToDelete.id);
-      const remaining = chapters.filter((c) => c.id !== chapterToDelete.id);
-      setChapters(remaining);
-      setChapterToDelete(null);
-      if (selectedChapter?.id === chapterToDelete.id) {
-        if (remaining.length) {
-          await loadChapter(remaining[0]);
-        } else {
-          setScenes([]);
-          setBeats([]);
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting chapter:", error);
-      alert("Could not delete chapter. Please try again.");
-    }
-  };
 
   const openEditor = useCallback((type, item, versionId = null) => {
     loadIntoEditor(type, item, versionId, setEditingItem);
@@ -450,6 +387,43 @@ export default function ChaptersView() {
     }
   };
 
+  const toggleOutlineChapter = async (chapter) => {
+    setOutlineExpanded((prev) => ({
+      ...prev,
+      [chapter.id]: !prev[chapter.id],
+    }));
+
+    if (!outlineScenes[chapter.id]) {
+      try {
+        const sc = await getScenes(projectId, chapter.id);
+        setOutlineScenes((prev) => ({ ...prev, [chapter.id]: sc }));
+      } catch (e) {
+        console.error("Error loading scenes for outline:", e);
+      }
+    }
+  };
+
+  const handleDeleteChapter = async (chapter) => {
+    if (!chapter) return;
+    if (!window.confirm(`Delete "${chapter.title}"?`)) return;
+    try {
+      await deleteChapter(projectId, chapter.id);
+      const remaining = chapters.filter((c) => c.id !== chapter.id);
+      setChapters(remaining);
+      if (selectedChapter?.id === chapter.id) {
+        if (remaining.length) {
+          await loadChapter(remaining[0]);
+        } else {
+          setScenes([]);
+          setBeats([]);
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting chapter:", err);
+      alert("Could not delete chapter. Please try again.");
+    }
+  };
+
   const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
   const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
   const activeVersionLabel =
@@ -481,16 +455,21 @@ export default function ChaptersView() {
       <TopNav
         selectedChapter={selectedChapter}
         chapterNumber={chapterNumber}
-        dropdownOpen={dropdownOpen}
-        setDropdownOpen={setDropdownOpen}
         chapters={chapters}
-        onSelectChapter={handleSelectChapter}
-        onAddChapter={handleAddChapter}
-        onDeleteChapter={handleRequestDeleteChapter}
+        setChapters={setChapters}
+        loadChapter={loadChapter}
+        setScenes={setScenes}
+        setBeats={setBeats}
+        deleteChapter={deleteChapter}
+        createChapter={createChapter}
+        projectId={projectId}
         viewMode={viewMode}
         setViewMode={setViewMode}
         handleAdd={handleAdd}
         addButtonText={getAddButtonText()}
+        outlineOpen={outlineOpen}
+        setOutlineOpen={setOutlineOpen}
+        setEditingItem={setEditingItem}
       />
       
       <div className="main-content" ref={mainContentRef}>
@@ -508,7 +487,7 @@ export default function ChaptersView() {
           title="Drag to resize"
         />
 
-        <div className="editor-panel">
+        <div className="editor-panel" style={{ flex: outlineOpen ? "1 1 auto" : "1 1 100%" }}>
           <EditorPanel
             editorType={editorType}
             editorTitle={editorTitle}
@@ -532,6 +511,16 @@ export default function ChaptersView() {
           />
         </div>
 
+        <OutlineDrawer
+          open={outlineOpen}
+          setOpen={setOutlineOpen}
+          chapters={chapters}
+          scenesByChapter={outlineScenes}
+          expandedMap={outlineExpanded}
+          onToggleChapter={toggleOutlineChapter}
+          onDeleteChapter={handleDeleteChapter}
+        />
+
         {/* Link Selector Modal */}
         {showLinkSelector && (
           <LinkSelectorModal
@@ -551,48 +540,6 @@ export default function ChaptersView() {
         )}
       </div>
 
-      {/* New Chapter Modal */}
-      {showChapterModal && (
-        <div className="chapter-modal-overlay" onClick={() => setShowChapterModal(false)}>
-          <div className="chapter-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="chapter-modal-title">New Chapter</h3>
-            <input
-              className="chapter-modal-input"
-              type="text"
-              value={newChapterTitle}
-              onChange={(e) => setNewChapterTitle(e.target.value)}
-              placeholder="Chapter title"
-              autoFocus
-            />
-            <div className="chapter-modal-actions">
-              <button className="modal-btn cancel" onClick={() => setShowChapterModal(false)}>
-                Cancel
-              </button>
-              <button className="modal-btn primary" onClick={handleCreateChapter}>
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Chapter Modal */}
-      {chapterToDelete && (
-        <div className="chapter-modal-overlay" onClick={() => setChapterToDelete(null)}>
-          <div className="chapter-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="chapter-modal-title">Delete Chapter</h3>
-            <p>Are you sure you want to delete "{chapterToDelete.title}"?</p>
-            <div className="chapter-modal-actions">
-              <button className="modal-btn cancel" onClick={() => setChapterToDelete(null)}>
-                Cancel
-              </button>
-              <button className="modal-btn danger" onClick={handleConfirmDeleteChapter}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
