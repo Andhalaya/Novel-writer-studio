@@ -21,13 +21,12 @@ export default function SceneSection({
       className={"card-section scene " + (isEditing ? "editing" : "")}
       onClick={onEdit}
     >
-      <div className="card-type-label scene">
-        <FileText size={14} /> Scene
-      </div>
+      <div className="card-header-wrapper scene">
       <div className="card-header">
-        <div className="card-title">
+        <span className="scene-icon">📃</span>
+        <div className="card-title">      
           <div className="card-title-text">
-            {displayContent?.title || scene.title || "Untitled Scene"}
+           {displayContent?.title || scene.title || "Untitled Scene"}
           </div>
           <div className="card-meta version-subtitle">
             {activeVersionLabel ? activeVersionLabel : "Version 1"}
@@ -38,7 +37,8 @@ export default function SceneSection({
             </div>
           )}
         </div>
-        <div className="card-actions">
+      </div>
+      <div className="card-actions">
           {onReorder && (
             <>
               <button
@@ -72,10 +72,11 @@ export default function SceneSection({
               onDelete();
             }}
           >
-            <Trash2 size={16} />
+            <Trash2 size={16} className="delete-card"/>
           </button>
         </div>
       </div>
+      
       <div className="card-content">
         {displayContent?.text || scene.text || "No content yet..."}
       </div>

@@ -307,6 +307,23 @@
   min-width: 260px;
 }
 
+.card-header-wrapper {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-header-wrapper.scene {
+background: #5ac1db;
+background: linear-gradient(90deg, #def8ff 0%, #5985ff 100%);
+}
+
+.card-header-wrapper.beat {
+  background: #c58aff;
+  background: linear-gradient(90deg, #f5ecff 0%, #8e59ff 100%);
+}
+
 .panel-resizer {
   width: 6px;
   cursor: col-resize;
@@ -338,7 +355,6 @@
 }
 
 .card-section {
-  padding: 20px;
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid var(--border-light);
@@ -370,7 +386,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .card-type-label.scene {
@@ -383,31 +399,31 @@
 
 .version-subtitle {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+ display: flex;
+ align-items: center;
+ gap: 5px;
 }
 
-.card-title {
-  flex: 1;
+
+
+.scene-icon, .beat-icon {
+  font-size: 30px;
 }
 
 .card-title-text {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 4px;
 }
 
 .card-meta {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -423,7 +439,7 @@
 .card-action-btn {
   background: none;
   border: 1px solid var(--border);
-  color: var(--text-secondary);
+  color: white;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -434,8 +450,12 @@
   justify-content: center;
 }
 
+.delete-card{
+  color: white;
+}
+
 .card-action-btn:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   color: var(--primary);
   border-color: var(--primary);
 }
@@ -448,7 +468,7 @@
 .card-menu-btn {
   background: none;
   border: none;
-  color: var(--text-tertiary);
+  color: var(--white);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -456,7 +476,7 @@
 }
 
 .card-menu-btn:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   color: var(--error);
 }
 
@@ -464,10 +484,11 @@
   font-size: 0.75rem;
   line-height: 1.7;
   color: var(--text-secondary);
-  max-height: 200px;
+  max-height: 105px;
   overflow: hidden;
   position: relative;
   white-space: pre-wrap;
+  padding: 10px 20px;
 }
 
 .card-content:after {
