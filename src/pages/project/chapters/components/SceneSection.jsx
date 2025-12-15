@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, FileText } from "lucide-react";
 import { BASE_VERSION_ID } from "../../../../utils/versionUtils";
 
 export default function SceneSection({
@@ -21,7 +21,7 @@ export default function SceneSection({
       className={"card-section scene " + (isEditing ? "editing" : "")}
       onClick={onEdit}
     >
-      <div className="card-type-label scene">dY", Scene</div>
+      <div className="card-type-label scene"><FileText size={14} /> Scene</div>
       <div className="card-header">
         <div className="card-title">
           <div className="card-title-text">
@@ -80,3 +80,6 @@ export default function SceneSection({
     </div>
   );
 }
+
+
+

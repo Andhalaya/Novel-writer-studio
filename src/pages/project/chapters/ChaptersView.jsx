@@ -15,6 +15,7 @@ import {
 import SceneSection from "./components/SceneSection";
 import BeatSection from "./components/BeatSection";
 import LinkSelectorModal from "./components/LinkSelectorModal";
+import EditorPanel from "./components/EditorPanel";
 
 export default function ChaptersView() {
   const { projectId } = useParams();
@@ -22,6 +23,8 @@ export default function ChaptersView() {
     getChapters,
     getBeats,
     getScenes,
+    createScene,
+    createBeat,
     updateBeat,
     updateScene,
     updateChapter,
@@ -440,12 +443,47 @@ export default function ChaptersView() {
   };
 
   const handleAdd = () => {
-    if (viewMode === "scenes" || viewMode === "both") {
-      setShowSceneModal(true);
+    if (viewMode === "scenes") {
+      handleAddScene();
+    } else if (viewMode === "beats") {
+      handleAddBeat();
+    } else {
+      handleAddSceneAndBeatPair();
     }
-    if (viewMode === "beats") {
-      setShowBeatModal(true);
-    }
+  };
+
+  const handleAddScene = async () => {
+    if (!selectedChapter) return;
+    const orderIndex = scenes.length;
+    const newSceneData = {
+      title: `Scene ${orderIndex + 1}`,
+      text: "",
+      orderIndex,
+    };
+    const docRef = await createScene(projectId, selectedChapter.id, newSceneData);
+    const newScene = { id: docRef.id, ...newSceneData };
+    setScenes((prev) => [...prev, newScene]);
+    loadIntoEditor("scene", newScene);
+  };
+
+  const handleAddBeat = async () => {
+    if (!selectedChapter) return;
+    const orderIndex = beats.length;
+    const newBeatData = {
+      title: `Beat ${orderIndex + 1}`,
+      description: "",
+      orderIndex,
+      linkedSceneId: null,
+    };
+    const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
+    const newBeat = { id: docRef.id, ...newBeatData };
+    setBeats((prev) => [...prev, newBeat]);
+    loadIntoEditor("beat", newBeat);
+  };
+
+  const handleAddSceneAndBeatPair = async () => {
+    await handleAddScene();
+    await handleAddBeat();
   };
 
   const renderCards = () => {
@@ -663,107 +701,28 @@ export default function ChaptersView() {
         </div>
 
         <div className="editor-panel">
-          {!editorType ? (
-            <div className="editor-empty">
-              <div className="editor-empty-icon">📝</div>
-              <p className="editor-empty-text">Select a scene or beat to edit</p>
-            </div>
-          ) : (
-            <>
-              <div className="editor-header">
-                <div className="editor-type-label" data-type={editorType}>
-                  {editorType === "scene" ? "📄 Scene" : "⚡ Beat"}
-                </div>
-                <input
-                  type="text"
-                  className="editor-title-input"
-                  value={editorTitle}
-                  onChange={(e) => {
-                    setEditorTitle(e.target.value);
-                    setIsDirty(true);
-                    setSaveStatus("dirty");
-                  }}
-                  onBlur={() => {
-                    if (editorType === "scene") return;
-                    saveEditor();
-                  }}
-                  placeholder={(editorType === "scene" ? "Scene" : "Beat") + " title..."}
-                />
-                {editorType === "scene" && (
-                  <div className="version-select-row">
-                    <select
-                      className="version-select"
-                      value={editorVersionId || BASE_VERSION_ID}
-                      onChange={(e) => handleSelectVersion(editorId, e.target.value)}
-                    >
-                      {editorVersionOptions.map((opt, idx) => (
-                        <option key={opt.id || idx} value={opt.id || BASE_VERSION_ID}>
-                          {opt.label || opt.title || "Version " + (idx + 1)}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="version-badge">In manuscript: {activeVersionLabel}</div>
-                  </div>
-                )}
-                <div className="editor-toolbar">
-                  {editorType === "scene" ? (
-                    <>
-                      <button className="toolbar-btn" onClick={saveCurrentVersion}>
-                        💾 Save
-                      </button>
-                      <button className="toolbar-btn" onClick={saveNewVersion}>
-                        Save as New Version
-                      </button>
-                      <button className="toolbar-btn" onClick={addVersionToManuscript}>
-                        Add to Manuscript
-                      </button>
-                      <button
-                        className="toolbar-btn delete"
-                        onClick={deleteCurrentVersion}
-                        disabled={editorVersionId === BASE_VERSION_ID}
-                        title={editorVersionId === BASE_VERSION_ID ? "Base version cannot be deleted" : "Delete this version"}
-                      >
-                        Delete Version
-                      </button>
-                    </>
-                  ) : (
-                    <button className="toolbar-btn" onClick={saveEditor}>
-                      💾 Save
-                    </button>
-                  )}
-                  <button
-                    className="toolbar-btn delete"
-                    onClick={() => handleDeleteItem(editorType, editorId)}
-                  >
-                    🗑️ Delete
-                  </button>
-                  {saveStatus !== "idle" && (
-                    <div className={`save-status ${saveStatus}`}>
-                      {saveStatus === "dirty" && "● Not saved"}
-                      {saveStatus === "saved" && "● Saved"}
-                      {saveStatus === "autosaved" && "● Auto-saved"}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="editor-content">
-                <textarea
-                  className="editor-textarea"
-                  value={editorContent}
-                  onChange={(e) => {
-                    setEditorContent(e.target.value);
-                    setIsDirty(true);
-                    setSaveStatus("dirty");
-                  }}
-                  placeholder={`Write your ${editorType} here...`}
-                />
-              </div>
-            </>
-          )}
+          <EditorPanel
+            editorType={editorType}
+            editorTitle={editorTitle}
+            setEditorTitle={setEditorTitle}
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            editorVersionId={editorVersionId}
+            editorVersionOptions={editorVersionOptions}
+            activeVersionLabel={activeVersionLabel}
+            handleSelectVersion={handleSelectVersion}
+            saveCurrentVersion={saveCurrentVersion}
+            saveNewVersion={saveNewVersion}
+            addVersionToManuscript={addVersionToManuscript}
+            deleteCurrentVersion={deleteCurrentVersion}
+            saveEditor={saveEditor}
+            handleDeleteItem={handleDeleteItem}
+            setIsDirty={setIsDirty}
+            setSaveStatus={setSaveStatus}
+            saveStatus={saveStatus}
+            editorId={editorId}
+          />
         </div>
-      </div>
-
       {/* Link Selector Modal */}
       {showLinkSelector && (
         <LinkSelectorModal
@@ -773,6 +732,7 @@ export default function ChaptersView() {
           onClose={() => setShowLinkSelector(null)}
         />
       )}
+      </div>
     </div>
   );
 }
