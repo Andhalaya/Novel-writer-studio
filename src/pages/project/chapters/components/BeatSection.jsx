@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, Link as LinkIcon, Unlink } from "lucide-react";
+import { Trash2, Link as LinkIcon, Unlink, ArrowRightLeft } from "lucide-react";
 
 export default function BeatSection({
   beat,
@@ -15,7 +15,9 @@ export default function BeatSection({
       className={`card-section beat ${isEditing ? "editing" : ""}`}
       onClick={onEdit}
     >
-      <div className="card-type-label beat">ƒs­ Beat</div>
+      <div className="card-type-label beat">
+        <ArrowRightLeft size={14} /> Beat
+      </div>
       <div className="card-header">
         <div className="card-title">
           <div className="card-title-text">{beat.title || "Untitled Beat"}</div>
@@ -58,7 +60,7 @@ export default function BeatSection({
             }}
             title="Change linked scene"
           >
-            dY",
+            <LinkIcon size={14} />
           </button>
           <button
             className="card-menu-btn"

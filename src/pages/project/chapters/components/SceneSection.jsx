@@ -21,7 +21,9 @@ export default function SceneSection({
       className={"card-section scene " + (isEditing ? "editing" : "")}
       onClick={onEdit}
     >
-      <div className="card-type-label scene"><FileText size={14} /> Scene</div>
+      <div className="card-type-label scene">
+        <FileText size={14} /> Scene
+      </div>
       <div className="card-header">
         <div className="card-title">
           <div className="card-title-text">
@@ -48,7 +50,7 @@ export default function SceneSection({
                 disabled={!canMoveUp}
                 title="Move up"
               >
-                🔼
+                <ChevronUp size={14} />
               </button>
               <button
                 className="card-action-btn"
@@ -59,9 +61,23 @@ export default function SceneSection({
                 disabled={!canMoveDown}
                 title="Move down"
               >
-               🔼
+                <ChevronDown size={14} />
               </button>
             </>
+          )}
+          {onSelectVersion && (
+            <select
+              className="version-select"
+              value={activeVersionId || BASE_VERSION_ID}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => onSelectVersion(e.target.value)}
+            >
+              {versionOptions?.map((opt, idx) => (
+                <option key={opt.id || idx} value={opt.id || BASE_VERSION_ID}>
+                  {opt.label || opt.title || `Version ${idx + 1}`}
+                </option>
+              ))}
+            </select>
           )}
           <button
             className="card-menu-btn"
@@ -80,5 +96,3 @@ export default function SceneSection({
     </div>
   );
 }
-
-

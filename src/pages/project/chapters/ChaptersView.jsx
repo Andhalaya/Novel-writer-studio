@@ -7,7 +7,6 @@ import {
   Plus,
 } from "lucide-react";
 import {
-  BASE_VERSION_ID,
   getVersionOptions,
   getVersionLabel,
   getDisplayContent,
@@ -16,7 +15,10 @@ import SceneSection from "./components/SceneSection";
 import BeatSection from "./components/BeatSection";
 import LinkSelectorModal from "./components/LinkSelectorModal";
 import EditorPanel from "./components/EditorPanel";
+import CardsPanel from "./components/CardsPanel";
+import TopNav from "./components/TopNav";
 import { useChapterData } from "../../../hooks/useChapterData";
+import { useChapterEditor } from "../../../hooks/useChapterEditor";
 
 export default function ChaptersView() {
   const { projectId } = useParams();
@@ -45,7 +47,6 @@ export default function ChaptersView() {
     setScenes,
     beats,
     setBeats,
-    loadChapters,
     loadChapter,
     handleLinkBeat,
     handleUnlinkBeat,
@@ -60,55 +61,38 @@ export default function ChaptersView() {
   });
   const [viewMode, setViewMode] = useState("both");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showSceneModal, setShowSceneModal] = useState(false);
-  const [showBeatModal, setShowBeatModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [chapterTitleDraft, setChapterTitleDraft] = useState("");
   const [showLinkSelector, setShowLinkSelector] = useState(null); // { beatId: string }
 
-  // Editor state
-  const [editorTitle, setEditorTitle] = useState("");
-  const [editorContent, setEditorContent] = useState("");
-  const [editorType, setEditorType] = useState(null);
-  const [editorId, setEditorId] = useState(null);
-  const [editorVersionId, setEditorVersionId] = useState(BASE_VERSION_ID);
-  const [isDirty, setIsDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("idle");
-
-  useEffect(() => {
-    if (!editorType || !editorId || !selectedChapter) return;
-
-    const interval = setInterval(async () => {
-      if (!isDirty) return;
-      if (editorType === "scene") return;
-
-      await updateBeat(projectId, selectedChapter.id, editorId, {
-        description: editorContent,
-        title: editorTitle,
-      });
-
-      setBeats((prev) =>
-        prev.map((b) =>
-          b.id === editorId
-            ? { ...b, description: editorContent, title: editorTitle }
-            : b
-        )
-      );
-
-      setIsDirty(false);
-      setSaveStatus("saved");
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [
+  const {
+    editorTitle,
+    setEditorTitle,
+    editorContent,
+    setEditorContent,
     editorType,
     editorId,
-    selectedChapter?.id,
-    isDirty,
-    editorTitle,
-    editorContent,
+    editorVersionId,
+    setIsDirty,
+    saveStatus,
+    setSaveStatus,
+    loadIntoEditor,
+    saveCurrentVersion,
+    saveNewVersion,
+    addVersionToManuscript,
+    deleteCurrentVersion,
+    saveEditor,
+    handleSelectVersion,
+  } = useChapterEditor({
     projectId,
-  ]);
+    selectedChapter,
+    scenes,
+    setScenes,
+    beats,
+    setBeats,
+    updateScene,
+    updateBeat,
+  });
 
   useEffect(() => {
     if (selectedChapter) {
@@ -126,53 +110,10 @@ export default function ChaptersView() {
     await loadChapter(chapter);
     setChapterTitleDraft(chapter.title);
     setEditingItem(null);
-    setEditorType(null);
   };
 
-  const loadIntoEditor = (type, item, versionId = null) => {
-    setEditorType(type);
-    setEditorId(item.id);
-    if (type === "scene") {
-      const options = getVersionOptions(item);
-      const activeId = versionId || item.activeVersionId || BASE_VERSION_ID;
-      const activeVersion =
-        options.find((v) => v.id === activeId) || options[0] || {};
-      setEditorVersionId(activeVersion.id || BASE_VERSION_ID);
-      setEditorTitle(
-        activeVersion.title ||
-        item.title ||
-        (type === "scene" ? "Untitled Scene" : "Untitled Beat")
-      );
-      setEditorContent(activeVersion.text || item.text || "");
-    } else {
-      setEditorTitle(item.title || "Untitled Beat");
-      setEditorContent(item.description || "");
-    }
-    setEditingItem({ type, id: item.id });
-    setIsDirty(false);
-    setSaveStatus("idle");
-  };
-
-  const saveEditor = async () => {
-    if (!editorType || !editorId) return;
-
-    if (editorType === "scene") {
-      await saveCurrentVersion();
-      return;
-    }
-
-    await updateBeat(projectId, selectedChapter.id, editorId, {
-      description: editorContent,
-      title: editorTitle,
-    });
-    setBeats((prev) =>
-      prev.map((b) =>
-        b.id === editorId ? { ...b, description: editorContent, title: editorTitle } : b
-      )
-    );
-
-    setIsDirty(false);
-    setSaveStatus("saved");
+  const openEditor = (type, item, versionId = null) => {
+    loadIntoEditor(type, item, versionId, setEditingItem);
   };
 
   const handleDeleteItem = async (type, id) => {
@@ -200,178 +141,6 @@ export default function ChaptersView() {
       setEditorId(null);
       setEditingItem(null);
     }
-  };
-
-  const handleSelectVersion = (sceneId, versionId) => {
-    const scene = scenes.find((s) => s.id === sceneId);
-    if (!scene) return;
-    loadIntoEditor("scene", scene, versionId);
-  };
-
-  const saveCurrentVersion = async () => {
-    if (editorType !== "scene" || !editorId) return;
-    const scene = scenes.find((s) => s.id === editorId);
-    if (!scene) return;
-
-    if (editorVersionId === BASE_VERSION_ID) {
-      await updateScene(projectId, selectedChapter.id, editorId, {
-        text: editorContent,
-        title: editorTitle,
-        activeVersionId: BASE_VERSION_ID,
-      });
-      setScenes((prev) =>
-        prev.map((s) =>
-          s.id === editorId
-            ? { ...s, text: editorContent, title: editorTitle, activeVersionId: BASE_VERSION_ID }
-            : s
-        )
-      );
-    } else {
-      const updatedVersions = (scene.versions || []).map((v) =>
-        v.id === editorVersionId
-          ? { ...v, title: editorTitle, label: editorTitle, text: editorContent }
-          : v
-      );
-      await updateScene(projectId, selectedChapter.id, editorId, {
-        versions: updatedVersions,
-      });
-      setScenes((prev) =>
-        prev.map((s) => (s.id === editorId ? { ...s, versions: updatedVersions } : s))
-      );
-    }
-
-    setIsDirty(false);
-    setSaveStatus("saved");
-  };
-
-  const saveNewVersion = async () => {
-    if (editorType !== "scene" || !editorId) return;
-    const scene = scenes.find((s) => s.id === editorId);
-    if (!scene) return;
-
-    const nextVersionNumber = (scene.versions?.length || 0) + 2; // base version is 1
-    const versionLabel = `Version ${nextVersionNumber}`;
-
-    const nextVersions = [
-      {
-        id: `ver-${Date.now()}`,
-        title: versionLabel,
-        label: versionLabel,
-        text: editorContent || "",
-        createdAt: new Date().toISOString(),
-      },
-      ...(scene.versions || []),
-    ];
-
-    await updateScene(projectId, selectedChapter.id, editorId, { versions: nextVersions });
-    setScenes((prev) =>
-      prev.map((s) => (s.id === editorId ? { ...s, versions: nextVersions } : s))
-    );
-    setEditorVersionId(nextVersions[0].id);
-    setIsDirty(false);
-    setSaveStatus("saved");
-  };
-
-  const addVersionToManuscript = async () => {
-    if (editorType !== "scene" || !editorId) return;
-    const scene = scenes.find((s) => s.id === editorId);
-    if (!scene) return;
-
-    if (editorVersionId === BASE_VERSION_ID) {
-      // Publish the base scene (also update base content)
-      await updateScene(projectId, selectedChapter.id, editorId, {
-        text: editorContent,
-        title: editorTitle,
-        manuscriptText: editorContent,
-        manuscriptTitle: editorTitle,
-        activeVersionId: BASE_VERSION_ID,
-      });
-
-      setScenes((prev) =>
-        prev.map((s) =>
-          s.id === editorId
-            ? {
-                ...s,
-                text: editorContent,
-                title: editorTitle,
-                manuscriptText: editorContent,
-                manuscriptTitle: editorTitle,
-                activeVersionId: BASE_VERSION_ID,
-              }
-            : s
-        )
-      );
-    } else {
-      // Publish a specific version (keep base title/text intact)
-      const updatedVersions = (scene.versions || []).map((v) =>
-        v.id === editorVersionId
-          ? { ...v, title: editorTitle, label: editorTitle, text: editorContent }
-          : v
-      );
-      const selectedVersion = updatedVersions.find((v) => v.id === editorVersionId);
-      const manuscriptTitle = selectedVersion?.title || selectedVersion?.label || scene.title;
-      const manuscriptText = selectedVersion?.text || scene.text;
-
-      await updateScene(projectId, selectedChapter.id, editorId, {
-        manuscriptText,
-        manuscriptTitle,
-        activeVersionId: editorVersionId,
-        versions: updatedVersions,
-      });
-
-      setScenes((prev) =>
-        prev.map((s) =>
-          s.id === editorId
-            ? {
-                ...s,
-                manuscriptText,
-                manuscriptTitle,
-                activeVersionId: editorVersionId,
-                versions: updatedVersions,
-              }
-            : s
-        )
-      );
-    }
-
-    setIsDirty(false);
-    setSaveStatus("saved");
-  };
-
-  const deleteCurrentVersion = async () => {
-    if (editorType !== "scene" || !editorId) return;
-    if (editorVersionId === BASE_VERSION_ID) return;
-    const scene = scenes.find((s) => s.id === editorId);
-    if (!scene) return;
-
-    const remaining = (scene.versions || []).filter((v) => v.id !== editorVersionId);
-    const activeVersionId =
-      scene.activeVersionId === editorVersionId ? BASE_VERSION_ID : scene.activeVersionId;
-
-    await updateScene(projectId, selectedChapter.id, editorId, {
-      versions: remaining,
-      activeVersionId,
-    });
-
-    const baseTitle = scene.title || "Untitled Scene";
-    const baseText = scene.text || "";
-    const nextVersionId = activeVersionId || BASE_VERSION_ID;
-    const nextTitle = nextVersionId === BASE_VERSION_ID ? baseTitle : editorTitle;
-    const nextText = nextVersionId === BASE_VERSION_ID ? baseText : editorContent;
-
-    setScenes((prev) =>
-      prev.map((s) =>
-        s.id === editorId
-          ? { ...s, versions: remaining, activeVersionId, title: baseTitle, text: baseText }
-          : s
-      )
-    );
-
-    setEditorVersionId(nextVersionId);
-    setEditorTitle(nextTitle);
-    setEditorContent(nextText);
-    setIsDirty(false);
-    setSaveStatus("saved");
   };
 
   const getPairs = () => {
@@ -419,7 +188,7 @@ export default function ChaptersView() {
     const docRef = await createScene(projectId, selectedChapter.id, newSceneData);
     const newScene = { id: docRef.id, ...newSceneData };
     setScenes((prev) => [...prev, newScene]);
-    loadIntoEditor("scene", newScene);
+    openEditor("scene", newScene);
   };
 
   const handleAddBeat = async () => {
@@ -434,7 +203,7 @@ export default function ChaptersView() {
     const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
     const newBeat = { id: docRef.id, ...newBeatData };
     setBeats((prev) => [...prev, newBeat]);
-    loadIntoEditor("beat", newBeat);
+    openEditor("beat", newBeat);
   };
 
   const handleAddSceneAndBeatPair = async () => {
@@ -450,7 +219,7 @@ export default function ChaptersView() {
           <SceneSection
             scene={pair.scene}
             isEditing={editingItem?.type === "scene" && editingItem?.id === pair.scene.id}
-            onEdit={() => loadIntoEditor("scene", pair.scene)}
+            onEdit={() => openEditor("scene", pair.scene)}
             onDelete={() => handleDeleteItem("scene", pair.scene.id)}
             onReorder={(direction) => {
               const newIndex = direction === "up" ? index - 1 : index + 1;
@@ -471,7 +240,7 @@ export default function ChaptersView() {
             <BeatSection
               beat={pair.beat}
               isEditing={editingItem?.type === "beat" && editingItem?.id === pair.beat.id}
-              onEdit={() => loadIntoEditor("beat", pair.beat)}
+              onEdit={() => openEditor("beat", pair.beat)}
               onDelete={() => handleDeleteItem("beat", pair.beat.id)}
               onUnlink={() => handleUnlinkBeat(pair.beat.id)}
               onChangeLink={() => setShowLinkSelector({ beatId: pair.beat.id })}
@@ -493,7 +262,7 @@ export default function ChaptersView() {
           <SceneSection
             scene={scene}
             isEditing={editingItem?.type === "scene" && editingItem?.id === scene.id}
-            onEdit={() => loadIntoEditor("scene", scene)}
+            onEdit={() => openEditor("scene", scene)}
             onDelete={() => handleDeleteItem("scene", scene.id)}
             onReorder={(direction) => {
               const newIndex = direction === "up" ? index - 1 : index + 1;
@@ -521,7 +290,7 @@ export default function ChaptersView() {
             <BeatSection
               beat={beat}
               isEditing={editingItem?.type === "beat" && editingItem?.id === beat.id}
-              onEdit={() => loadIntoEditor("beat", beat)}
+              onEdit={() => openEditor("beat", beat)}
               onDelete={() => handleDeleteItem("beat", beat.id)}
               onUnlink={beat.linkedSceneId ? () => handleUnlinkBeat(beat.id) : null}
               onChangeLink={() => setShowLinkSelector({ beatId: beat.id })}
@@ -541,122 +310,25 @@ export default function ChaptersView() {
 
   return (
     <div className="chapters-view-container">
-      {/* Top Navigation */}
-      <div className="top-nav">
-        <div className="chapter-selector">
-          <button
-            className="chapter-dropdown-btn"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
-            <span>
-              {selectedChapter ? `Chapter ${chapterNumber}` : "Select a chapter"}
-            </span>
-            <ChevronDown size={16} />
-          </button>
-
-          {dropdownOpen && (
-            <div className="chapter-dropdown">
-              {chapters.map((chapter) => (
-                <div
-                  key={chapter.id}
-                  className={`chapter-dropdown-item ${selectedChapter?.id === chapter.id ? "active" : ""
-                    }`}
-                  onClick={() => {
-                    handleSelectChapter(chapter);
-                    setDropdownOpen(false);
-                  }}
-                >
-                  <div className="chapter-dropdown-title">{chapter.title}</div>
-                  <div className="chapter-dropdown-meta">
-                    {chapter.scenes?.length || 0} scenes • {chapter.beats?.length || 0} beats
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="view-toggle">
-          <button
-            className={`view-toggle-btn ${viewMode === "both" ? "active" : ""}`}
-            onClick={() => setViewMode("both")}
-          >
-            Both
-          </button>
-          <button
-            className={`view-toggle-btn ${viewMode === "scenes" ? "active" : ""}`}
-            onClick={() => setViewMode("scenes")}
-          >
-            Scenes
-          </button>
-          <button
-            className={`view-toggle-btn ${viewMode === "beats" ? "active" : ""}`}
-            onClick={() => setViewMode("beats")}
-          >
-            Beats
-          </button>
-        </div>
-
-        <div className="nav-spacer" />
-
-        <button className="add-btn" onClick={handleAdd}>
-          <Plus size={18} />
-          <span>{getAddButtonText()}</span>
-        </button>
-      </div>
-
-      {selectedChapter && (
-        <div className="chapter-title-bar">
-          <input
-            className="editor-title-input"
-            value={chapterTitleDraft}
-            onChange={(e) => setChapterTitleDraft(e.target.value)}
-            onBlur={async () => {
-              const next = chapterTitleDraft.trim();
-              if (!next || next === selectedChapter.title) return;
-
-              await updateChapter(projectId, selectedChapter.id, {
-                title: next,
-              });
-
-              setChapters((prev) =>
-                prev.map((c) =>
-                  c.id === selectedChapter.id ? { ...c, title: next } : c
-                )
-              );
-
-              setSelectedChapter((prev) => ({
-                ...prev,
-                title: next,
-              }));
-            }}
-            placeholder="Chapter title…"
-          />
-          <div className="chapter-title-number">
-            {scenes.length || 0} scenes • {beats.length || 0} beats • 1023 words
-          </div>
-        </div>
-      )}
-
-      <div className="main-content">
-        <div className="cards-panel">
-          {!selectedChapter ? (
-            <div className="empty-state">
-              <div className="empty-icon">📖</div>
-              <p className="empty-text">Select a chapter to begin</p>
-            </div>
-          ) : scenes.length === 0 && beats.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">✨</div>
-              <p className="empty-text">No scenes or beats yet</p>
-              <p className="empty-hint">Click "Add Scene & Beat Pair" to start</p>
-            </div>
-          ) : (
-            renderCards()
-          )}
-        </div>
-
-        <div className="editor-panel">
+            <TopNav
+        selectedChapter={selectedChapter}
+        chapterNumber={chapterNumber}
+        dropdownOpen={dropdownOpen}
+        setDropdownOpen={setDropdownOpen}
+        chapters={chapters}
+        onSelectChapter={handleSelectChapter}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        handleAdd={handleAdd}
+        addButtonText={getAddButtonText()}
+      />      
+  <div className="main-content">
+        <CardsPanel
+          selectedChapter={selectedChapter}
+          scenes={scenes}
+          beats={beats}
+          renderCards={renderCards}
+        /><div className="editor-panel">
           <EditorPanel
             editorType={editorType}
             editorTitle={editorTitle}
@@ -695,3 +367,4 @@ export default function ChaptersView() {
     </div>
   );
 }
+
