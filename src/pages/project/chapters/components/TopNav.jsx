@@ -39,7 +39,7 @@ export default function TopNav({
               >
                 <div className="chapter-dropdown-title">{chapter.title}</div>
                 <div className="chapter-dropdown-meta">
-                  {chapter.scenes?.length || 0} scenes ƒ?› {chapter.beats?.length || 0} beats
+                  {chapter.scenes?.length || 0} scenes · {chapter.beats?.length || 0} beats
                 </div>
               </div>
             ))}

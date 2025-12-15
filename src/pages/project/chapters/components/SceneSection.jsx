@@ -34,7 +34,7 @@ export default function SceneSection({
           </div>
           {scene.location && (
             <div className="card-meta">
-              {scene.location} ƒ?› {scene.time || "Unspecified time"}
+              {scene.location}. {scene.time || "Unspecified time"}
             </div>
           )}
         </div>
@@ -64,20 +64,6 @@ export default function SceneSection({
                 <ChevronDown size={14} />
               </button>
             </>
-          )}
-          {onSelectVersion && (
-            <select
-              className="version-select"
-              value={activeVersionId || BASE_VERSION_ID}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => onSelectVersion(e.target.value)}
-            >
-              {versionOptions?.map((opt, idx) => (
-                <option key={opt.id || idx} value={opt.id || BASE_VERSION_ID}>
-                  {opt.label || opt.title || `Version ${idx + 1}`}
-                </option>
-              ))}
-            </select>
           )}
           <button
             className="card-menu-btn"

@@ -26,7 +26,7 @@ export default function EditorPanel({
   if (!editorType) {
     return (
       <div className="editor-empty">
-        <div className="editor-empty-icon">dY"?</div>
+        <div className="editor-empty-icon">No selection</div>
         <p className="editor-empty-text">Select a scene or beat to edit</p>
       </div>
     );
@@ -36,7 +36,7 @@ export default function EditorPanel({
     <>
       <div className="editor-header">
         <div className="editor-type-label" data-type={editorType}>
-          {editorType === "scene" ? "dY\", Scene" : "ƒs­ Beat"}
+          {editorType === "scene" ? "Scene" : "Beat"}
         </div>
         <input
           type="text"
@@ -108,9 +108,9 @@ export default function EditorPanel({
           </button>
           {saveStatus !== "idle" && (
             <div className={`save-status ${saveStatus}`}>
-              {saveStatus === "dirty" && "ƒ-? Not saved"}
-              {saveStatus === "saved" && "ƒ-? Saved"}
-              {saveStatus === "autosaved" && "ƒ-? Auto-saved"}
+              {saveStatus === "dirty" && "Not saved"}
+              {saveStatus === "saved" && "Saved"}
+              {saveStatus === "autosaved" && "Auto-saved"}
             </div>
           )}
         </div>

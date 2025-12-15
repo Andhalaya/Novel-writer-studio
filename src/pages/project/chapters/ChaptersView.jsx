@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./ChaptersView.css";
 import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
-import {
-  ChevronDown,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   getVersionOptions,
   getVersionLabel,
@@ -30,7 +27,6 @@ export default function ChaptersView() {
     createBeat,
     updateBeat,
     updateScene,
-    updateChapter,
     deleteScene,
     deleteBeat,
     linkBeatToScene,
@@ -40,9 +36,7 @@ export default function ChaptersView() {
 
   const {
     chapters,
-    setChapters,
     selectedChapter,
-    setSelectedChapter,
     scenes,
     setScenes,
     beats,
@@ -62,7 +56,6 @@ export default function ChaptersView() {
   const [viewMode, setViewMode] = useState("both");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [chapterTitleDraft, setChapterTitleDraft] = useState("");
   const [showLinkSelector, setShowLinkSelector] = useState(null); // { beatId: string }
 
   const {
@@ -94,12 +87,6 @@ export default function ChaptersView() {
     updateBeat,
   });
 
-  useEffect(() => {
-    if (selectedChapter) {
-      setChapterTitleDraft(selectedChapter.title);
-    }
-  }, [selectedChapter]);
-
   const chapterNumber = selectedChapter
     ? chapters
       .sort((a, b) => a.orderIndex - b.orderIndex)
@@ -108,7 +95,6 @@ export default function ChaptersView() {
 
   const handleSelectChapter = async (chapter) => {
     await loadChapter(chapter);
-    setChapterTitleDraft(chapter.title);
     setEditingItem(null);
   };
 
@@ -137,8 +123,6 @@ export default function ChaptersView() {
     }
 
     if (editorId === id) {
-      setEditorType(null);
-      setEditorId(null);
       setEditingItem(null);
     }
   };
@@ -367,4 +351,3 @@ export default function ChaptersView() {
     </div>
   );
 }
-
