@@ -522,27 +522,40 @@ export default function ManuscriptView() {
 
       {/* Selection Toolbar */}
       {selectedText && !showCommentBox && (
-        <div
-          className="selection-toolbar"
-          style={{
-            top: selectedText.position.top - 50,
-            left: selectedText.position.left,
-          }}
+      <div
+        className="selection-toolbar"
+        style={{
+          top: selectedText.position.top - 50,
+          left: selectedText.position.left,
+        }}
+      >
+        <button
+          className="toolbar-action"
+          onClick={() => setShowCommentBox(true)}
+          title="Add comment"
         >
-          <button
-            className="toolbar-action"
-            onClick={() => setShowCommentBox(true)}
-            title="Add comment"
-          >
-            <MessageSquare size={16} />
-          </button>
-          <button
-            className="toolbar-action"
-            onClick={() => handleAddHighlight("yellow")}
-            title="Highlight"
-          >
-            <Highlighter size={16} />
-          </button>
+          <MessageSquare size={16} />
+        </button>
+          <div className="highlight-actions" title="Highlight">
+            <button
+              className="toolbar-action color-yellow"
+              onClick={() => handleAddHighlight("yellow")}
+            >
+              <Highlighter size={16} />
+            </button>
+            <button
+              className="toolbar-action color-green"
+              onClick={() => handleAddHighlight("green")}
+            >
+              <Highlighter size={16} />
+            </button>
+            <button
+              className="toolbar-action color-pink"
+              onClick={() => handleAddHighlight("pink")}
+            >
+              <Highlighter size={16} />
+            </button>
+          </div>
         </div>
       )}
 
