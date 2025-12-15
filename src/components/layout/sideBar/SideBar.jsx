@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
@@ -33,6 +33,7 @@ function SideBar({ collapsed }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { currentProject, projects, selectProject, isProjectSelected } = useProject();
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleExport = (scope) => {
     // Notify ManuscriptView to export using its current context (chapter/scenes)
@@ -117,20 +118,40 @@ function SideBar({ collapsed }) {
             {location.pathname.includes("/manuscript") && (
               <div className="export-controls">
                 <Download size={18} />
-                <button
-                  className="export-control-btn"
-                  onClick={() => handleExport("chapter")}
-                  title="Export current chapter"
-                >
-                  Export Chapter
-                </button>
-                <button
-                  className="export-control-btn"
-                  onClick={() => handleExport("novel")}
-                  title="Export full novel"
-                >
-                  Export Novel
-                </button>
+                <div className="export-dropdown">
+                  <button
+                    className="export-control-btn"
+                    onClick={() => setExportOpen((v) => !v)}
+                    title="Export"
+                  >
+                    Export ▾
+                  </button>
+                  {exportOpen && (
+                    <div
+                      className="export-menu"
+                      onMouseLeave={() => setExportOpen(false)}
+                    >
+                      <button
+                        className="export-menu-item"
+                        onClick={() => {
+                          handleExport("chapter");
+                          setExportOpen(false);
+                        }}
+                      >
+                        Export current chapter
+                      </button>
+                      <button
+                        className="export-menu-item"
+                        onClick={() => {
+                          handleExport("novel");
+                          setExportOpen(false);
+                        }}
+                      >
+                        Export full novel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>

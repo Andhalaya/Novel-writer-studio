@@ -11,7 +11,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
-  BASE_VERSION_ID,
   getDisplayContent as getDisplayContentFromUtils,
 } from "../../../utils/versionUtils";
 
