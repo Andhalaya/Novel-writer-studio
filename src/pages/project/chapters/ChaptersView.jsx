@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import "./ChaptersView.css";
 import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
@@ -58,6 +58,9 @@ export default function ChaptersView() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showLinkSelector, setShowLinkSelector] = useState(null);
+  const [cardsWidth, setCardsWidth] = useState(30); // percentage
+  const [isResizing, setIsResizing] = useState(false);
+  const mainContentRef = useRef(null);
 
   const {
     editorTitle,
@@ -390,6 +393,25 @@ export default function ChaptersView() {
       ? getVersionLabel(currentScene, currentScene.activeVersionId)
       : "Version 1";
 
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e) => {
+      const container = mainContentRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const percent = Math.min(60, Math.max(20, (relativeX / rect.width) * 100));
+      setCardsWidth(percent);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
   return (
     <div className="chapters-view-container">
       <TopNav
@@ -405,14 +427,21 @@ export default function ChaptersView() {
         addButtonText={getAddButtonText()}
       />
       
-      <div className="main-content">
+      <div className="main-content" ref={mainContentRef}>
         <CardsPanel
           selectedChapter={selectedChapter}
           scenes={scenes}
           beats={beats}
           renderCards={renderCards}
+          style={{ width: `${cardsWidth}%` }}
         />
-        
+
+        <div
+          className={`panel-resizer ${isResizing ? "active" : ""}`}
+          onMouseDown={() => setIsResizing(true)}
+          title="Drag to resize"
+        />
+
         <div className="editor-panel">
           <EditorPanel
             editorType={editorType}

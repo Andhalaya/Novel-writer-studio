@@ -1,9 +1,9 @@
 import React from "react";
-import {BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
-export default function CardsPanel({ selectedChapter, scenes, beats, renderCards }) {
+export default function CardsPanel({ selectedChapter, scenes, beats, renderCards, style }) {
   return (
-    <div className="cards-panel">
+    <div className="cards-panel" style={style}>
       {!selectedChapter ? (
         <div className="empty-state">
           <div className="empty-icon">✨</div>
