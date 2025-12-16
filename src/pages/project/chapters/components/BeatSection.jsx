@@ -53,16 +53,6 @@ export default function BeatSection({
           </button>
         )}
         <button
-          className="card-action-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onChangeLink();
-          }}
-          title="Change linked scene"
-        >
-          <LinkIcon size={14} />
-        </button>
-        <button
           className="card-menu-btn"
           onClick={(e) => {
             e.stopPropagation();

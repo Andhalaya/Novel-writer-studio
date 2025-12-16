@@ -11,8 +11,8 @@ export default function OutlineDrawer({
 }) {
   return (
     <div className={`outline-drawer ${open ? "open" : ""}`}>
-      <div className="outline-toggle" onClick={() => setOpen(!open)}>
-        <span>{open ? "Hide Outline" : "Show Outline"}</span>
+      <div className="outline-title">
+        Book outline
       </div>
       {open && (
         <div className="outline-body">

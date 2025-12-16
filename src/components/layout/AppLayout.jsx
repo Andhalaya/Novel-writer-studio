@@ -7,7 +7,7 @@ import { Menu, Moon, Sun } from "lucide-react";
 function AppLayout({ children }) {
   const { currentProject } = useProject();
   const { theme, toggleTheme } = useTheme();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   return (
     <div className="app-shell">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, Plus, PanelRightClose } from "lucide-react";
+import { ChevronDown, Plus, PanelRightClose, PanelRightOpen } from "lucide-react";
 
 export default function TopNav({
   selectedChapter,
@@ -133,25 +133,23 @@ export default function TopNav({
       </div>
 
       <div className="nav-spacer" />
-      <button
-        type="button"
+      <div
         className="add-chapter-btn"
         onClick={handleAddChapter}
       >
         + Add Chapter
-      </button>
-      <button className="add-btn" onClick={handleAdd}>
+      </div>
+      <div className="add-btn" onClick={handleAdd}>
         <Plus size={18} />
         <span>{addButtonText}</span>
-      </button>
-      <button
+      </div>
+      <div
         className="outline-toggle-btn"
         onClick={() => setOutlineOpen && setOutlineOpen((v) => !v)}
         title={outlineOpen ? "Hide outline" : "Show outline"}
       >
-        <PanelRightClose size={18} />
-        {outlineOpen ? "Hide Outline" : "Show Outline"}
-      </button>
+        {outlineOpen ? <PanelRightClose size={25} /> : <PanelRightOpen size={25} />}
+      </div>
 
       {/* New Chapter Modal */}
       {showChapterModal && (

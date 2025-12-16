@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
@@ -114,18 +114,18 @@ function SideBar({ collapsed }) {
               label="Manuscript"
               collapsed={collapsed}
             />
+            <div className="divider" />
             {/* Export controls shown only on manuscript route */}
             {location.pathname.includes("/manuscript") && (
-              <div className="export-controls">
-                <Download size={18} />
+              <div className="export-controls">  
                 <div className="export-dropdown">
-                  <button
+                  <div
                     className="export-control-btn"
                     onClick={() => setExportOpen((v) => !v)}
                     title="Export"
                   >
-                    Export ▾
-                  </button>
+                    <Download size={18} />Export 
+                  </div>
                   {exportOpen && (
                     <div
                       className="export-menu"

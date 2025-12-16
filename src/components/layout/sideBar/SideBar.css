@@ -142,32 +142,21 @@
 }
 
 .export-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin: 6px 8px;
+ margin-left: 15px;
 }
 
 .export-control-btn {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .export-control-btn:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--primary);
   color: var(--primary);
 }
 
