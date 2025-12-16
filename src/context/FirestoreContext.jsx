@@ -70,6 +70,11 @@ export function FirestoreProvider({ children }) {
         return updateDoc(ref, { ...data, updatedAt: new Date() });
     };
 
+    const deleteChapter = async (projectId, chapterId) => {
+        const ref = doc(db, "projects", projectId, "chapters", chapterId);
+        return deleteDoc(ref);
+    };
+
     // --------------------------
     // BEATS
     // --------------------------
@@ -298,6 +303,7 @@ export function FirestoreProvider({ children }) {
             getChapters,
             createChapter,
             updateChapter,
+            deleteChapter,
 
             getBeats,
             createBeat,

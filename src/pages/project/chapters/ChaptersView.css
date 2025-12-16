@@ -13,7 +13,6 @@
 /* ====================================
    TOP NAVIGATION
 ==================================== */
-
 .top-nav {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -85,21 +84,6 @@
   overflow-y: auto;
 }
 
-.add-chapter-btn {
-  padding: 10px 20px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
-}
-
-.add-chapter-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
-}
 
 .chapter-modal-overlay {
   position: fixed;
@@ -203,18 +187,14 @@
 
 .outline-toggle-btn {
   padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  border-radius: 30px;
+  color: var(--text-tertiary);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .outline-toggle-btn:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--primary);
   color: var(--primary);
 }
 
@@ -281,25 +261,22 @@
 }
 
 /* Add Button */
-.add-btn {
+.add-chapter-btn, .add-btn {
   padding: 10px 20px;
-  background: var(--primary);
-  color: white;
-  border: none;
+  border: 2px solid var(--primary);
+  color: var(--primary);
   border-radius: 8px;
-  font-size: 14px;
   font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
 }
 
-.add-btn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
+.add-chapter-btn:hover {
+  background-color: var(--primary);
+  color: #fff;
 }
+
 
 /* ====================================
    MAIN CONTENT
@@ -807,8 +784,7 @@ background: linear-gradient(90deg, #e4f9ff 0%, #c4d5ff 100%);
   gap: 8px;
 }
 
-.outline-caret-btn {
-  background: var(--bg-tertiary);
+.outline-chapter-btn {
   border: 1px solid var(--border);
   border-radius: 6px;
   width: 28px;
@@ -874,6 +850,64 @@ background: linear-gradient(90deg, #e4f9ff 0%, #c4d5ff 100%);
   border-radius: 50%;
   background: var(--primary);
   display: inline-block;
+}
+
+/* Floating add menu */
+.floating-add-wrap {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 150;
+}
+
+.floating-add-btn {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.floating-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
+}
+
+.floating-add-menu {
+  position: absolute;
+  right: 0;
+  bottom: 60px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.floating-add-item {
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.floating-add-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary);
 }
 
 .editor-header {
@@ -1119,11 +1153,6 @@ background: linear-gradient(90deg, #e4f9ff 0%, #c4d5ff 100%);
 
   .view-toggle {
     flex: 1;
-  }
-
-  .add-btn {
-    width: 100%;
-    justify-content: center;
   }
 
   .cards-panel {

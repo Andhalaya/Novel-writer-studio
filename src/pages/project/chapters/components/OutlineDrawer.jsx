@@ -2,7 +2,6 @@ import React from "react";
 
 export default function OutlineDrawer({
   open,
-  setOpen,
   chapters,
   scenesByChapter,
   expandedMap,

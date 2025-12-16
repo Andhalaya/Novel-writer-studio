@@ -1,20 +1,14 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import "./ChaptersView.css";
 import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
-import { Plus } from "lucide-react";
-import {
-  getVersionOptions,
-  getVersionLabel,
-  getDisplayContent,
-} from "../../../utils/versionUtils";
-import SceneSection from "./components/SceneSection";
-import BeatSection from "./components/BeatSection";
+import { getVersionOptions, getVersionLabel } from "../../../utils/versionUtils";
 import LinkSelectorModal from "./components/LinkSelectorModal";
 import EditorPanel from "./components/EditorPanel";
 import CardsPanel from "./components/CardsPanel";
 import TopNav from "./components/TopNav";
 import OutlineDrawer from "./components/OutlineDrawer";
+import FloatingAddMenu from "./components/FloatingAddMenu";
 import { useChapterData } from "../../../hooks/useChapterData";
 import { useChapterEditor } from "../../../hooks/useChapterEditor";
 
@@ -61,7 +55,7 @@ export default function ChaptersView() {
   const [viewMode, setViewMode] = useState("both");
   const [editingItem, setEditingItem] = useState(null);
   const [showLinkSelector, setShowLinkSelector] = useState(null);
-  const [cardsWidth, setCardsWidth] = useState(30); // percentage
+  const [cardsWidth, setCardsWidth] = useState(30); 
   const [isResizing, setIsResizing] = useState(false);
   const mainContentRef = useRef(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
@@ -97,59 +91,18 @@ export default function ChaptersView() {
     updateBeat,
   });
 
+  const openEditor = useCallback(
+    (type, item, versionId = null) => {
+      loadIntoEditor(type, item, versionId, setEditingItem);
+    },
+    [loadIntoEditor]
+  );
+
   const chapterNumber = selectedChapter
     ? chapters
         .sort((a, b) => a.orderIndex - b.orderIndex)
         .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
-
-  const openEditor = useCallback((type, item, versionId = null) => {
-    loadIntoEditor(type, item, versionId, setEditingItem);
-  }, [loadIntoEditor]);
-
-  const handleDeleteItem = async (type, id) => {
-    if (!window.confirm(`¿Eliminar este ${type === "scene" ? "escena" : "beat"}?`)) return;
-
-    try {
-      if (type === "scene") {
-        // Primero desenlazar todos los beats vinculados
-        const linkedBeats = beats.filter(b => b.linkedSceneId === id);
-        
-        for (const beat of linkedBeats) {
-          await unlinkBeat(projectId, selectedChapter.id, beat.id);
-        }
-
-        // Eliminar la escena
-        await deleteScene(projectId, selectedChapter.id, id);
-        setScenes((prev) => prev.filter((s) => s.id !== id));
-
-        // Recargar beats desde Firestore para asegurar sincronización
-        const updatedBeats = await getBeats(projectId, selectedChapter.id);
-        setBeats(updatedBeats);
-      } else {
-        await deleteBeat(projectId, selectedChapter.id, id);
-        setBeats((prev) => prev.filter((b) => b.id !== id));
-      }
-
-      if (editorId === id) {
-        setEditingItem(null);
-      }
-    } catch (error) {
-      console.error(`Error al eliminar ${type}:`, error);
-      alert(`Error al eliminar. Por favor, inténtalo de nuevo.`);
-    }
-  };
-
-  // Memorizar los pares para evitar recalcular en cada render
-  const pairs = useMemo(() => {
-    return scenes.map((scene) => {
-      const linkedBeat = beats.find((b) => b.linkedSceneId === scene.id);
-      return {
-        scene,
-        beat: linkedBeat || null,
-      };
-    });
-  }, [scenes, beats]);
 
   const getAddButtonText = () => {
     switch (viewMode) {
@@ -219,6 +172,29 @@ export default function ChaptersView() {
     }
   };
 
+  const handleAddBeatToScene = async (sceneId) => {
+    if (!selectedChapter) return;
+
+    try {
+      const orderIndex = beats.length;
+      const newBeatData = {
+        title: `Beat ${orderIndex + 1}`,
+        description: "",
+        orderIndex,
+        linkedSceneId: sceneId,
+      };
+      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
+      const newBeat = { id: docRef.id, ...newBeatData };
+      setBeats((prev) => [...prev, newBeat]);
+      openEditor("beat", newBeat);
+      return newBeat;
+    } catch (error) {
+      console.error("Error al crear beat:", error);
+      alert("Error al crear el beat. IntAcntalo de nuevo.");
+      return null;
+    }
+  };
+
   // Optimizado para crear en paralelo
   const handleAddSceneAndBeatPair = async () => {
     if (!selectedChapter) return;
@@ -267,126 +243,6 @@ export default function ChaptersView() {
     }
   };
 
-  // Función auxiliar para crear y vincular beat a una escena específica
-  const handleAddBeatToScene = async (sceneId) => {
-    if (!selectedChapter) return;
-
-    try {
-      const orderIndex = beats.length;
-      const newBeatData = {
-        title: `Beat ${orderIndex + 1}`,
-        description: "",
-        orderIndex,
-        linkedSceneId: null,
-      };
-
-      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
-      const newBeat = { id: docRef.id, ...newBeatData };
-      setBeats((prev) => [...prev, newBeat]);
-
-      // Vincular automáticamente a la escena
-      await handleLinkBeat(newBeat.id, sceneId);
-
-      openEditor("beat", newBeat);
-    } catch (error) {
-      console.error("Error al crear y vincular beat:", error);
-      alert("Error al crear el beat. Inténtalo de nuevo.");
-    }
-  };
-
-  const renderCards = () => {
-    if (viewMode === "both") {
-      return pairs.map((pair, index) => (
-        <div key={`pair-${pair.scene.id}`} className="content-card">
-          <SceneSection
-            scene={pair.scene}
-            isEditing={editingItem?.type === "scene" && editingItem?.id === pair.scene.id}
-            onEdit={() => openEditor("scene", pair.scene)}
-            onDelete={() => handleDeleteItem("scene", pair.scene.id)}
-            onReorder={(direction) => {
-              const newIndex = direction === "up" ? index - 1 : index + 1;
-              if (newIndex >= 0 && newIndex < scenes.length) {
-                handleSceneReorder(index, newIndex);
-              }
-            }}
-            canMoveUp={index > 0}
-            canMoveDown={index < scenes.length - 1}
-            activeVersionLabel={getVersionLabel(pair.scene, pair.scene.activeVersionId)}
-            versionOptions={getVersionOptions(pair.scene)}
-            activeVersionId={pair.scene.activeVersionId}
-            onSelectVersion={(versionId) => handleSelectVersion(pair.scene.id, versionId)}
-            displayContent={getDisplayContent(pair.scene)}
-          />
-
-          {pair.beat ? (
-            <BeatSection
-              beat={pair.beat}
-              isEditing={editingItem?.type === "beat" && editingItem?.id === pair.beat.id}
-              onEdit={() => openEditor("beat", pair.beat)}
-              onDelete={() => handleDeleteItem("beat", pair.beat.id)}
-              onUnlink={() => handleUnlinkBeat(pair.beat.id)}
-              onChangeLink={() => setShowLinkSelector({ beatId: pair.beat.id })}
-              linkedScene={pair.scene}
-            />
-          ) : (
-            <div className="card-section empty-section">
-              <button 
-                className="add-empty-btn"
-                onClick={() => handleAddBeatToScene(pair.scene.id)}
-              >
-                <Plus size={18} />
-                <span>Add Beat</span>
-              </button>
-            </div>
-          )}
-        </div>
-      ));
-    } else if (viewMode === "scenes") {
-      return scenes.map((scene, index) => (
-        <div key={scene.id} className="content-card">
-          <SceneSection
-            scene={scene}
-            isEditing={editingItem?.type === "scene" && editingItem?.id === scene.id}
-            onEdit={() => openEditor("scene", scene)}
-            onDelete={() => handleDeleteItem("scene", scene.id)}
-            onReorder={(direction) => {
-              const newIndex = direction === "up" ? index - 1 : index + 1;
-              if (newIndex >= 0 && newIndex < scenes.length) {
-                handleSceneReorder(index, newIndex);
-              }
-            }}
-            canMoveUp={index > 0}
-            canMoveDown={index < scenes.length - 1}
-            activeVersionLabel={getVersionLabel(scene, scene.activeVersionId)}
-            versionOptions={getVersionOptions(scene)}
-            activeVersionId={scene.activeVersionId}
-            onSelectVersion={(versionId) => handleSelectVersion(scene.id, versionId)}
-            displayContent={getDisplayContent(scene)}
-          />
-        </div>
-      ));
-    } else {
-      return beats.map((beat) => {
-        const linkedScene = beat.linkedSceneId
-          ? scenes.find((s) => s.id === beat.linkedSceneId)
-          : null;
-        return (
-          <div key={beat.id} className="content-card">
-            <BeatSection
-              beat={beat}
-              isEditing={editingItem?.type === "beat" && editingItem?.id === beat.id}
-              onEdit={() => openEditor("beat", beat)}
-              onDelete={() => handleDeleteItem("beat", beat.id)}
-              onUnlink={beat.linkedSceneId ? () => handleUnlinkBeat(beat.id) : null}
-              onChangeLink={() => setShowLinkSelector({ beatId: beat.id })}
-              linkedScene={linkedScene}
-            />
-          </div>
-        );
-      });
-    }
-  };
-
   const toggleOutlineChapter = async (chapter) => {
     setOutlineExpanded((prev) => ({
       ...prev,
@@ -424,6 +280,39 @@ export default function ChaptersView() {
     }
   };
 
+  const handleDeleteItem = async (type, id) => {
+      if (!window.confirm(`¿Eliminar este ${type === "scene" ? "escena" : "beat"}?`)) return;
+  
+      try {
+        if (type === "scene") {
+          // Primero desenlazar todos los beats vinculados
+          const linkedBeats = beats.filter(b => b.linkedSceneId === id);
+          
+          for (const beat of linkedBeats) {
+            await unlinkBeat(projectId, selectedChapter.id, beat.id);
+          }
+  
+          // Eliminar la escena
+          await deleteScene(projectId, selectedChapter.id, id);
+          setScenes((prev) => prev.filter((s) => s.id !== id));
+  
+          // Recargar beats desde Firestore para asegurar sincronización
+          const updatedBeats = await getBeats(projectId, selectedChapter.id);
+          setBeats(updatedBeats);
+        } else {
+          await deleteBeat(projectId, selectedChapter.id, id);
+          setBeats((prev) => prev.filter((b) => b.id !== id));
+        }
+  
+        if (editorId === id) {
+          setEditingItem(null);
+        }
+      } catch (error) {
+        console.error(`Error al eliminar ${type}:`, error);
+        alert(`Error al eliminar. Por favor, inténtalo de nuevo.`);
+      }
+    };
+
   const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
   const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
   const activeVersionLabel =
@@ -450,6 +339,31 @@ export default function ChaptersView() {
     };
   }, [isResizing]);
 
+  // Listen for floating add-chapter button event
+  useEffect(() => {
+    const addChapterHandler = () => {
+      const btn = document.querySelector(".add-chapter-btn");
+      if (btn) btn.click();
+    };
+    const addSceneHandler = () => {
+      // Use existing flow: set view to scenes and add
+      setViewMode("scenes");
+      handleAddScene();
+    };
+    const addBeatHandler = () => {
+      setViewMode("beats");
+      handleAddBeat();
+    };
+    window.addEventListener("add-chapter", addChapterHandler);
+    window.addEventListener("add-scene", addSceneHandler);
+    window.addEventListener("add-beat", addBeatHandler);
+    return () => {
+      window.removeEventListener("add-chapter", addChapterHandler);
+      window.removeEventListener("add-scene", addSceneHandler);
+      window.removeEventListener("add-beat", addBeatHandler);
+    };
+  }, []);
+
   return (
     <div className="chapters-view-container">
       <TopNav
@@ -469,16 +383,23 @@ export default function ChaptersView() {
         addButtonText={getAddButtonText()}
         outlineOpen={outlineOpen}
         setOutlineOpen={setOutlineOpen}
-        setEditingItem={setEditingItem}
       />
       
       <div className="main-content" ref={mainContentRef}>
         <CardsPanel
-          selectedChapter={selectedChapter}
+          style={{ width: `${cardsWidth}%` }}
           scenes={scenes}
           beats={beats}
-          renderCards={renderCards}
-          style={{ width: `${cardsWidth}%` }}
+          viewMode={viewMode}
+          editingItem={editingItem}
+          openEditor={openEditor}
+          handleSceneReorder={handleSceneReorder}
+          handleUnlinkBeat={handleUnlinkBeat}
+          handleSelectVersion={handleSelectVersion}
+          handleDeleteItem={handleDeleteItem}
+          handleAddBeatToScene={handleAddBeatToScene}
+          setShowLinkSelector={setShowLinkSelector}
+          selectedChapter={selectedChapter}
         />
 
         <div
@@ -540,6 +461,17 @@ export default function ChaptersView() {
         )}
       </div>
 
+      <FloatingAddMenu
+        onAddScene={() => {
+          setViewMode("scenes");
+          handleAddScene();
+        }}
+        onAddBeat={() => {
+          setViewMode("beats");
+          handleAddBeat();
+        }}
+        onAddChapter={() => window.dispatchEvent(new CustomEvent("add-chapter"))}
+      />
     </div>
   );
 }

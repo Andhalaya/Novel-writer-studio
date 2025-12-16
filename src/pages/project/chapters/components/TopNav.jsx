@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, Plus, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { ChevronDown, PanelRightClose, PanelRightOpen } from "lucide-react";
 
 export default function TopNav({
   selectedChapter,
@@ -27,6 +27,11 @@ export default function TopNav({
   const handleSelectChapter = async (chapter) => {
     await loadChapter(chapter);
     setDropdownOpen(false);
+  };
+
+  const openDeleteModal = () => {
+    if (!selectedChapter) return;
+    setChapterToDelete(selectedChapter);
   };
 
   const handleAddChapter = () => {
@@ -133,16 +138,14 @@ export default function TopNav({
       </div>
 
       <div className="nav-spacer" />
-      <div
-        className="add-chapter-btn"
-        onClick={handleAddChapter}
+      <button
+        className="delete-chapter-btn"
+        onClick={openDeleteModal}
+        disabled={!selectedChapter}
+        title={selectedChapter ? "Delete current chapter" : "Select a chapter first"}
       >
-        + Add Chapter
-      </div>
-      <div className="add-btn" onClick={handleAdd}>
-        <Plus size={18} />
-        <span>{addButtonText}</span>
-      </div>
+        Delete
+      </button>
       <div
         className="outline-toggle-btn"
         onClick={() => setOutlineOpen && setOutlineOpen((v) => !v)}
