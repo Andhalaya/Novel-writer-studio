@@ -11,6 +11,7 @@ import OutlineDrawer from "./components/OutlineDrawer";
 import FloatingAddMenu from "./components/FloatingAddMenu";
 import { useChapterData } from "../../../hooks/useChapterData";
 import { useChapterEditor } from "../../../hooks/useChapterEditor";
+import { useChapterCRUD } from "../../../hooks/useChapterCRUD";
 
 export default function ChaptersView() {
   const { projectId } = useParams();
@@ -106,6 +107,34 @@ export default function ChaptersView() {
         .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
 
+  const {
+    handleAddScene,
+    handleAddBeat,
+    handleAddBeatToScene,
+    handleAddSceneAndBeatPair,
+    handleDeleteItem,
+    handleDeleteChapter,
+  } = useChapterCRUD({
+    projectId,
+    selectedChapter,
+    chapters,
+    setChapters,
+    scenes,
+    setScenes,
+    beats,
+    setBeats,
+    loadChapter,
+    createScene,
+    createBeat,
+    deleteScene,
+    deleteBeat,
+    deleteChapter,
+    unlinkBeat,
+    getBeats,
+    openEditor,
+    setEditingItem,
+  });
+
   const getAddButtonText = () => {
     switch (viewMode) {
       case "both":
@@ -159,122 +188,6 @@ export default function ChaptersView() {
     }
   };
 
-  const handleAddScene = async () => {
-    if (!selectedChapter) return;
-    
-    try {
-      const orderIndex = scenes.length;
-      const newSceneData = {
-        title: `Scene ${orderIndex + 1}`,
-        text: "",
-        orderIndex,
-      };
-      const docRef = await createScene(projectId, selectedChapter.id, newSceneData);
-      const newScene = { id: docRef.id, ...newSceneData };
-      setScenes((prev) => [...prev, newScene]);
-      openEditor("scene", newScene);
-      return newScene;
-    } catch (error) {
-      console.error("Error al crear escena:", error);
-      alert("Error al crear la escena. Inténtalo de nuevo.");
-      return null;
-    }
-  };
-
-  const handleAddBeat = async () => {
-    if (!selectedChapter) return;
-    
-    try {
-      const orderIndex = beats.length;
-      const newBeatData = {
-        title: `Beat ${orderIndex + 1}`,
-        description: "",
-        orderIndex,
-        linkedSceneId: null,
-      };
-      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
-      const newBeat = { id: docRef.id, ...newBeatData };
-      setBeats((prev) => [...prev, newBeat]);
-      openEditor("beat", newBeat);
-      return newBeat;
-    } catch (error) {
-      console.error("Error al crear beat:", error);
-      alert("Error al crear el beat. Inténtalo de nuevo.");
-      return null;
-    }
-  };
-
-  const handleAddBeatToScene = async (sceneId) => {
-    if (!selectedChapter) return;
-
-    try {
-      const orderIndex = beats.length;
-      const newBeatData = {
-        title: `Beat ${orderIndex + 1}`,
-        description: "",
-        orderIndex,
-        linkedSceneId: sceneId,
-      };
-      const docRef = await createBeat(projectId, selectedChapter.id, newBeatData);
-      const newBeat = { id: docRef.id, ...newBeatData };
-      setBeats((prev) => [...prev, newBeat]);
-      openEditor("beat", newBeat);
-      return newBeat;
-    } catch (error) {
-      console.error("Error al crear beat:", error);
-      alert("Error al crear el beat. IntAcntalo de nuevo.");
-      return null;
-    }
-  };
-
-  // Optimizado para crear en paralelo
-  const handleAddSceneAndBeatPair = async () => {
-    if (!selectedChapter) return;
-
-    try {
-      const orderIndexScene = scenes.length;
-      const orderIndexBeat = beats.length;
-
-      const [sceneRef, beatRef] = await Promise.all([
-        createScene(projectId, selectedChapter.id, {
-          title: `Scene ${orderIndexScene + 1}`,
-          text: "",
-          orderIndex: orderIndexScene,
-        }),
-        createBeat(projectId, selectedChapter.id, {
-          title: `Beat ${orderIndexBeat + 1}`,
-          description: "",
-          orderIndex: orderIndexBeat,
-          linkedSceneId: null,
-        })
-      ]);
-
-      const newScene = {
-        id: sceneRef.id,
-        title: `Scene ${orderIndexScene + 1}`,
-        text: "",
-        orderIndex: orderIndexScene,
-      };
-
-      const newBeat = {
-        id: beatRef.id,
-        title: `Beat ${orderIndexBeat + 1}`,
-        description: "",
-        orderIndex: orderIndexBeat,
-        linkedSceneId: null,
-      };
-
-      setScenes((prev) => [...prev, newScene]);
-      setBeats((prev) => [...prev, newBeat]);
-      
-      // Abrir el editor con la nueva escena
-      openEditor("scene", newScene);
-    } catch (error) {
-      console.error("Error al crear par escena-beat:", error);
-      alert("Error al crear el par. Inténtalo de nuevo.");
-    }
-  };
-
   const toggleOutlineChapter = async (chapter) => {
     setOutlineExpanded((prev) => ({
       ...prev,
@@ -290,60 +203,6 @@ export default function ChaptersView() {
       }
     }
   };
-
-  const handleDeleteChapter = async (chapter) => {
-    if (!chapter) return;
-    if (!window.confirm(`Delete "${chapter.title}"?`)) return;
-    try {
-      await deleteChapter(projectId, chapter.id);
-      const remaining = chapters.filter((c) => c.id !== chapter.id);
-      setChapters(remaining);
-      if (selectedChapter?.id === chapter.id) {
-        if (remaining.length) {
-          await loadChapter(remaining[0]);
-        } else {
-          setScenes([]);
-          setBeats([]);
-        }
-      }
-    } catch (err) {
-      console.error("Error deleting chapter:", err);
-      alert("Could not delete chapter. Please try again.");
-    }
-  };
-
-  const handleDeleteItem = async (type, id) => {
-      if (!window.confirm(`¿Eliminar este ${type === "scene" ? "escena" : "beat"}?`)) return;
-  
-      try {
-        if (type === "scene") {
-          // Primero desenlazar todos los beats vinculados
-          const linkedBeats = beats.filter(b => b.linkedSceneId === id);
-          
-          for (const beat of linkedBeats) {
-            await unlinkBeat(projectId, selectedChapter.id, beat.id);
-          }
-  
-          // Eliminar la escena
-          await deleteScene(projectId, selectedChapter.id, id);
-          setScenes((prev) => prev.filter((s) => s.id !== id));
-  
-          // Recargar beats desde Firestore para asegurar sincronización
-          const updatedBeats = await getBeats(projectId, selectedChapter.id);
-          setBeats(updatedBeats);
-        } else {
-          await deleteBeat(projectId, selectedChapter.id, id);
-          setBeats((prev) => prev.filter((b) => b.id !== id));
-        }
-  
-        if (editorId === id) {
-          setEditingItem(null);
-        }
-      } catch (error) {
-        console.error(`Error al eliminar ${type}:`, error);
-        alert(`Error al eliminar. Por favor, inténtalo de nuevo.`);
-      }
-    };
 
   const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
   const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
@@ -393,7 +252,7 @@ export default function ChaptersView() {
       window.removeEventListener("add-scene", addSceneHandler);
       window.removeEventListener("add-beat", addBeatHandler);
     };
-  }, [handleAddChapter]);
+  }, [handleAddChapter, handleAddScene, handleAddBeat]);
 
   return (
     <div className="chapters-view-container">
@@ -529,3 +388,4 @@ export default function ChaptersView() {
     </div>
   );
 }
+
