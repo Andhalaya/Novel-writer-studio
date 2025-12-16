@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { ChevronDown, PanelRightClose, PanelRightOpen, Plus } from "lucide-react";
 
 export default function TopNav({
   selectedChapter,
@@ -13,8 +13,9 @@ export default function TopNav({
   projectId,
   viewMode,
   setViewMode,
-  handleAdd,
-  addButtonText,
+  handleAddScene,
+  handleAddBeat,
+  handleAddSceneAndBeatPair,
   outlineOpen,
   setOutlineOpen,
 }) {
@@ -49,6 +50,29 @@ export default function TopNav({
     } catch (error) {
       console.error("Error deleting chapter:", error);
       alert("Could not delete chapter. Please try again.");
+    }
+  };
+
+  const getAddButtonText = () => {
+    switch (viewMode) {
+      case "both":
+        return "Add Scene & Beat Pair";
+      case "scenes":
+        return "Add Scene";
+      case "beats":
+        return "Add Beat";
+      default:
+        return "Add";
+    }
+  };
+
+  const handleAdd = () => {
+    if (viewMode === "scenes") {
+      handleAddScene();
+    } else if (viewMode === "beats") {
+      handleAddBeat();
+    } else {
+      handleAddSceneAndBeatPair();
     }
   };
 
@@ -105,6 +129,10 @@ export default function TopNav({
       </div>
 
       <div className="nav-spacer" />
+      <div className="add-btn" onClick={handleAdd}>
+        <Plus size={18} />
+        <span>{getAddButtonText()}</span>
+      </div>
       <div
         className="outline-toggle-btn"
         onClick={() => setOutlineOpen && setOutlineOpen((v) => !v)}

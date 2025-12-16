@@ -506,13 +506,6 @@ export default function ManuscriptView() {
                       <div className="timeline-meta">
                         {getWordCount(display.text)} words
                       </div>
-                      <button
-                        className="timeline-edit-btn"
-                        onClick={() => navigateToEdit("scene", scene.id)}
-                        title="Edit scene"
-                      >
-                        <ExternalLink size={12} /> Edit
-                      </button>
                     </div>
                   </div>
                 );

@@ -18,7 +18,6 @@ export default function FloatingAddMenu({ onAddScene, onAddBeat, onAddChapter })
         title="Quick add"
       >
         <Plus size={18} />
-        <span>Add</span>
       </button>
       {open && (
         <div

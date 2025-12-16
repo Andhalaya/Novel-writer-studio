@@ -1,5 +1,5 @@
 import React from "react";
-import { BASE_VERSION_ID } from "../../../../utils/versionUtils";
+import { BASE_VERSION_ID, getVersionLabel, getVersionOptions } from "../../../../utils/versionUtils";
 import { Save, FilePlus2, Upload, Trash2 } from "lucide-react";
 
 export default function EditorPanel({
@@ -9,8 +9,6 @@ export default function EditorPanel({
   editorContent,
   setEditorContent,
   editorVersionId,
-  editorVersionOptions,
-  activeVersionLabel,
   handleSelectVersion,
   saveCurrentVersion,
   saveNewVersion,
@@ -22,7 +20,15 @@ export default function EditorPanel({
   setSaveStatus,
   saveStatus,
   editorId,
+  scenes = [],
 }) {
+  const currentScene = editorType === "scene" ? scenes.find((s) => s.id === editorId) : null;
+  const editorVersionOptions = currentScene ? getVersionOptions(currentScene) : [];
+  const activeVersionLabel =
+    currentScene && currentScene.activeVersionId
+      ? getVersionLabel(currentScene, currentScene.activeVersionId)
+      : "Version 1";
+
   if (!editorType) {
     return (
       <div className="editor-empty">
