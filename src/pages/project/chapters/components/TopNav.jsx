@@ -10,7 +10,6 @@ export default function TopNav({
   setScenes,
   setBeats,
   deleteChapter,
-  createChapter,
   projectId,
   viewMode,
   setViewMode,
@@ -20,8 +19,6 @@ export default function TopNav({
   setOutlineOpen,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showChapterModal, setShowChapterModal] = useState(false);
-  const [newChapterTitle, setNewChapterTitle] = useState("");
   const [chapterToDelete, setChapterToDelete] = useState(null);
 
   const handleSelectChapter = async (chapter) => {
@@ -32,36 +29,6 @@ export default function TopNav({
   const openDeleteModal = () => {
     if (!selectedChapter) return;
     setChapterToDelete(selectedChapter);
-  };
-
-  const handleAddChapter = () => {
-    const defaultTitle = `Chapter ${chapters.length + 1}`;
-    setNewChapterTitle(defaultTitle);
-    setShowChapterModal(true);
-  };
-
-  const handleCreateChapter = async () => {
-    const title = newChapterTitle.trim();
-    if (!title) {
-      alert("Please enter a chapter title.");
-      return;
-    }
-    try {
-      const nextOrder =
-        chapters.length > 0
-          ? Math.max(...chapters.map((c) => c.orderIndex || 0)) + 1
-          : 0;
-      const newChapterData = { title, orderIndex: nextOrder };
-      const docRef = await createChapter(projectId, newChapterData);
-      const newChapter = { id: docRef.id, ...newChapterData };
-      setChapters((prev) => [...prev, newChapter].sort((a, b) => a.orderIndex - b.orderIndex));
-      setShowChapterModal(false);
-      setNewChapterTitle("");
-      await loadChapter(newChapter);
-    } catch (error) {
-      console.error("Error creating chapter:", error);
-      alert("Could not create chapter. Please try again.");
-    }
   };
 
   const handleConfirmDeleteChapter = async () => {
@@ -138,14 +105,6 @@ export default function TopNav({
       </div>
 
       <div className="nav-spacer" />
-      <button
-        className="delete-chapter-btn"
-        onClick={openDeleteModal}
-        disabled={!selectedChapter}
-        title={selectedChapter ? "Delete current chapter" : "Select a chapter first"}
-      >
-        Delete
-      </button>
       <div
         className="outline-toggle-btn"
         onClick={() => setOutlineOpen && setOutlineOpen((v) => !v)}
@@ -153,31 +112,6 @@ export default function TopNav({
       >
         {outlineOpen ? <PanelRightClose size={25} /> : <PanelRightOpen size={25} />}
       </div>
-
-      {/* New Chapter Modal */}
-      {showChapterModal && (
-        <div className="chapter-modal-overlay" onClick={() => setShowChapterModal(false)}>
-          <div className="chapter-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="chapter-modal-title">New Chapter</h3>
-            <input
-              className="chapter-modal-input"
-              type="text"
-              value={newChapterTitle}
-              onChange={(e) => setNewChapterTitle(e.target.value)}
-              placeholder="Chapter title"
-              autoFocus
-            />
-            <div className="chapter-modal-actions">
-              <button className="modal-btn cancel" onClick={() => setShowChapterModal(false)}>
-                Cancel
-              </button>
-              <button className="modal-btn primary" onClick={handleCreateChapter}>
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Chapter Modal */}
       {chapterToDelete && (

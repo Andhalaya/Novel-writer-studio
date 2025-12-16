@@ -61,6 +61,8 @@ export default function ChaptersView() {
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [outlineExpanded, setOutlineExpanded] = useState({});
   const [outlineScenes, setOutlineScenes] = useState({});
+  const [showChapterModal, setShowChapterModal] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState("");
 
   const {
     editorTitle,
@@ -113,7 +115,37 @@ export default function ChaptersView() {
       case "beats":
         return "Add Beat";
       default:
-        return "Add";
+      return "Add";
+    }
+  };
+
+  const handleAddChapter = () => {
+    const defaultTitle = `Chapter ${chapters.length + 1}`;
+    setNewChapterTitle(defaultTitle);
+    setShowChapterModal(true);
+  };
+
+  const handleCreateChapter = async () => {
+    const title = newChapterTitle.trim();
+    if (!title) {
+      alert("Please enter a chapter title.");
+      return;
+    }
+    try {
+      const nextOrder =
+        chapters.length > 0
+          ? Math.max(...chapters.map((c) => c.orderIndex || 0)) + 1
+          : 0;
+      const newChapterData = { title, orderIndex: nextOrder };
+      const docRef = await createChapter(projectId, newChapterData);
+      const newChapter = { id: docRef.id, ...newChapterData };
+      setChapters((prev) => [...prev, newChapter].sort((a, b) => a.orderIndex - b.orderIndex));
+      setShowChapterModal(false);
+      setNewChapterTitle("");
+      await loadChapter(newChapter);
+    } catch (error) {
+      console.error("Error creating chapter:", error);
+      alert("Could not create chapter. Please try again.");
     }
   };
 
@@ -342,8 +374,7 @@ export default function ChaptersView() {
   // Listen for floating add-chapter button event
   useEffect(() => {
     const addChapterHandler = () => {
-      const btn = document.querySelector(".add-chapter-btn");
-      if (btn) btn.click();
+      handleAddChapter();
     };
     const addSceneHandler = () => {
       // Use existing flow: set view to scenes and add
@@ -362,7 +393,7 @@ export default function ChaptersView() {
       window.removeEventListener("add-scene", addSceneHandler);
       window.removeEventListener("add-beat", addBeatHandler);
     };
-  }, []);
+  }, [handleAddChapter]);
 
   return (
     <div className="chapters-view-container">
@@ -375,7 +406,6 @@ export default function ChaptersView() {
         setScenes={setScenes}
         setBeats={setBeats}
         deleteChapter={deleteChapter}
-        createChapter={createChapter}
         projectId={projectId}
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -472,6 +502,30 @@ export default function ChaptersView() {
         }}
         onAddChapter={() => window.dispatchEvent(new CustomEvent("add-chapter"))}
       />
+
+      {showChapterModal && (
+        <div className="chapter-modal-overlay" onClick={() => setShowChapterModal(false)}>
+          <div className="chapter-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="chapter-modal-title">New Chapter</h3>
+            <input
+              className="chapter-modal-input"
+              type="text"
+              value={newChapterTitle}
+              onChange={(e) => setNewChapterTitle(e.target.value)}
+              placeholder="Chapter title"
+              autoFocus
+            />
+            <div className="chapter-modal-actions">
+              <button className="modal-btn cancel" onClick={() => setShowChapterModal(false)}>
+                Cancel
+              </button>
+              <button className="modal-btn primary" onClick={handleCreateChapter}>
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
