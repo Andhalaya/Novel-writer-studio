@@ -1,6 +1,7 @@
 import React from "react";
-import { BASE_VERSION_ID, getVersionLabel, getVersionOptions } from "../../../../utils/versionUtils";
+import { BASE_VERSION_ID, getVersionLabel, getVersionOptions } from "../../../../../utils/versionUtils";
 import { Save, FilePlus2, Upload, Trash2 } from "lucide-react";
+import './EditorPanel.css';
 
 export default function EditorPanel({
   editorType,

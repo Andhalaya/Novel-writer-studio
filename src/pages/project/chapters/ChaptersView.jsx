@@ -3,10 +3,10 @@ import "./ChaptersView.css";
 import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
 import LinkSelectorModal from "./components/LinkSelectorModal";
-import EditorPanel from "./components/EditorPanel";
+import EditorPanel from "./components/EditorPanel/EditorPanel";
 import CardsPanel from "./components/CardsPanel";
 import TopNav from "./components/TopNav";
-import OutlineDrawer from "./components/OutlineDrawer";
+import OutlineDrawer from "./components/OutlineDrawer/OutlineDrawer";
 import FloatingAddMenu from "./components/FloatingAddMenu";
 import { useChapterData } from "../../../hooks/useChapterData";
 import { useChapterEditor } from "../../../hooks/useChapterEditor";
@@ -106,8 +106,8 @@ export default function ChaptersView() {
 
   const chapterNumber = selectedChapter
     ? chapters
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .findIndex((c) => c.id === selectedChapter.id) + 1
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .findIndex((c) => c.id === selectedChapter.id) + 1
     : null;
 
   const {
@@ -168,6 +168,11 @@ export default function ChaptersView() {
     }
   };
 
+  const handleUpdateChapter = async (chapterId, data) => {
+  await updateChapter(projectId, chapterId, data);
+  // Refresh chapters list
+};
+
   const toggleOutlineChapter = async (chapter) => {
     setOutlineExpanded((prev) => ({
       ...prev,
@@ -184,6 +189,8 @@ export default function ChaptersView() {
     }
   };
 
+  
+
   return (
     <div className="chapters-view-container">
       <TopNav
@@ -192,19 +199,19 @@ export default function ChaptersView() {
         chapters={chapters}
         setChapters={setChapters}
         loadChapter={loadChapter}
-      setScenes={setScenes}
-      setBeats={setBeats}
-      deleteChapter={deleteChapter}
-      projectId={projectId}
-      viewMode={viewMode}
-      setViewMode={setViewMode}
-      handleAddScene={handleAddScene}
-      handleAddBeat={handleAddBeat}
-      handleAddSceneAndBeatPair={handleAddSceneAndBeatPair}
-      outlineOpen={outlineOpen}
-      setOutlineOpen={setOutlineOpen}
-    />
-      
+        setScenes={setScenes}
+        setBeats={setBeats}
+        deleteChapter={deleteChapter}
+        projectId={projectId}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        handleAddScene={handleAddScene}
+        handleAddBeat={handleAddBeat}
+        handleAddSceneAndBeatPair={handleAddSceneAndBeatPair}
+        outlineOpen={outlineOpen}
+        setOutlineOpen={setOutlineOpen}
+      />
+
       <div className="main-content" ref={mainContentRef}>
         <CardsPanel
           style={{ width: `${cardsWidth}%` }}
@@ -253,12 +260,12 @@ export default function ChaptersView() {
 
         <OutlineDrawer
           open={outlineOpen}
-          setOpen={setOutlineOpen}
           chapters={chapters}
           scenesByChapter={outlineScenes}
           expandedMap={outlineExpanded}
           onToggleChapter={toggleOutlineChapter}
           onDeleteChapter={handleDeleteChapter}
+          onCreateChapter={handleCreateChapter}  
         />
 
         {/* Link Selector Modal */}

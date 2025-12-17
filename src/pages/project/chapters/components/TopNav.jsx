@@ -129,10 +129,6 @@ export default function TopNav({
       </div>
 
       <div className="nav-spacer" />
-      <div className="add-btn" onClick={handleAdd}>
-        <Plus size={18} />
-        <span>{getAddButtonText()}</span>
-      </div>
       <div
         className="outline-toggle-btn"
         onClick={() => setOutlineOpen && setOutlineOpen((v) => !v)}
