@@ -1,0 +1,89 @@
+﻿.card-section.beat {
+  border: 1px solid #f2c95f;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #fff8db, #ffe9a5);
+  box-shadow: 0 16px 34px -26px rgba(180, 83, 9, 0.35);
+  padding: 10px 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card-section.beat:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 44px -30px rgba(180, 83, 9, 0.4);
+}
+
+.card-section.beat.editing {
+  border-color: #f59e0b;
+  box-shadow: 0 20px 46px -30px rgba(245, 158, 11, 0.5);
+}
+
+.beat-list-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.beat-pill-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #fde68a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.beat-pill-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.beat-pill-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.beat-pill-sub {
+  font-size: 11.5px;
+  color: #b45309;
+  margin-top: 2px;
+}
+
+.beat-snippet {
+  font-size: 12.5px;
+  color: #4b5563;
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.beat-pill-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.pill-btn {
+  background: #fff7d0;
+  border: 1px solid #f2c95f;
+  color: #b45309;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pill-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}

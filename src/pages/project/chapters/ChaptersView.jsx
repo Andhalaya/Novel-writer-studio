@@ -194,20 +194,6 @@ export default function ChaptersView() {
   return (
     <div className="chapters-view-container">
       <TopNav
-        selectedChapter={selectedChapter}
-        chapterNumber={chapterNumber}
-        chapters={chapters}
-        setChapters={setChapters}
-        loadChapter={loadChapter}
-        setScenes={setScenes}
-        setBeats={setBeats}
-        deleteChapter={deleteChapter}
-        projectId={projectId}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        handleAddScene={handleAddScene}
-        handleAddBeat={handleAddBeat}
-        handleAddSceneAndBeatPair={handleAddSceneAndBeatPair}
         outlineOpen={outlineOpen}
         setOutlineOpen={setOutlineOpen}
       />
@@ -218,6 +204,11 @@ export default function ChaptersView() {
           scenes={scenes}
           beats={beats}
           viewMode={viewMode}
+          setViewMode={setViewMode}
+          chapters={chapters}
+          selectedChapter={selectedChapter}
+          chapterNumber={chapterNumber}
+          loadChapter={loadChapter}
           editingItem={editingItem}
           openEditor={openEditor}
           handleSceneReorder={handleSceneReorder}
@@ -226,7 +217,6 @@ export default function ChaptersView() {
           handleDeleteItem={handleDeleteItem}
           handleAddBeatToScene={handleAddBeatToScene}
           setShowLinkSelector={setShowLinkSelector}
-          selectedChapter={selectedChapter}
         />
 
         <div

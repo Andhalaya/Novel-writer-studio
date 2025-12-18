@@ -1,6 +1,5 @@
-import React, { useMemo } from "react";
-import { Plus } from "lucide-react";
-import SceneSection from "./SceneSection";
+﻿import React, { useMemo, useState } from "react";
+import SceneSection from "./SceneSection/SceneSection";
 import BeatSection from "./BeatSection";
 import { getVersionLabel, getVersionOptions, getDisplayContent } from "../../../../utils/versionUtils";
 
@@ -9,6 +8,11 @@ export default function CardsPanel({
   scenes = [],
   beats = [],
   viewMode = "both",
+  setViewMode,
+  chapters = [],
+  selectedChapter,
+  chapterNumber,
+  loadChapter,
   editingItem,
   openEditor,
   handleSceneReorder,
@@ -17,8 +21,9 @@ export default function CardsPanel({
   handleDeleteItem,
   handleAddBeatToScene,
   setShowLinkSelector,
-  selectedChapter,
 }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   const pairs = useMemo(() => {
     return scenes.map((scene) => {
       const linkedBeat = beats.find((b) => b.linkedSceneId === scene.id);
@@ -48,29 +53,12 @@ export default function CardsPanel({
             activeVersionId={pair.scene.activeVersionId}
             onSelectVersion={(versionId) => handleSelectVersion(pair.scene.id, versionId)}
             displayContent={getDisplayContent(pair.scene)}
+            beat={pair.beat}
+            onChangeLink={() => pair.beat && setShowLinkSelector({ beatId: pair.beat.id })}
+            onUnlinkBeat={() => pair.beat && handleUnlinkBeat(pair.beat.id)}
+            onDeleteBeat={() => pair.beat && handleDeleteItem("beat", pair.beat.id)}
+            onAddBeat={() => handleAddBeatToScene(pair.scene.id)}
           />
-
-          {pair.beat ? (
-            <BeatSection
-              beat={pair.beat}
-              isEditing={editingItem?.type === "beat" && editingItem?.id === pair.beat.id}
-              onEdit={() => openEditor("beat", pair.beat)}
-              onDelete={() => handleDeleteItem("beat", pair.beat.id)}
-              onUnlink={() => handleUnlinkBeat(pair.beat.id)}
-              onChangeLink={() => setShowLinkSelector({ beatId: pair.beat.id })}
-              linkedScene={pair.scene}
-            />
-          ) : (
-            <div className="card-section empty-section">
-              <button
-                className="add-empty-btn"
-                onClick={() => handleAddBeatToScene(pair.scene.id)}
-              >
-                <Plus size={18} />
-                <span>Add Beat</span>
-              </button>
-            </div>
-          )}
         </div>
       ));
     } else if (viewMode === "scenes") {
@@ -121,14 +109,63 @@ export default function CardsPanel({
 
   return (
     <div className="cards-panel" style={style}>
+      <div className="cards-panel-header">
+        <div className="view-toggle">
+          <button
+            className={`view-toggle-btn ${viewMode === "both" ? "active" : ""}`}
+            onClick={() => setViewMode && setViewMode("both")}
+          >
+            Both
+          </button>
+          <button
+            className={`view-toggle-btn ${viewMode === "scenes" ? "active" : ""}`}
+            onClick={() => setViewMode && setViewMode("scenes")}
+          >
+            Scenes
+          </button>
+          <button
+            className={`view-toggle-btn ${viewMode === "beats" ? "active" : ""}`}
+            onClick={() => setViewMode && setViewMode("beats")}
+          >
+            Beats
+          </button>
+        </div>
+
+        <div className="chapter-selector inline">
+          <button
+            className="chapter-dropdown-btn"
+            onClick={() => setDropdownOpen((o) => !o)}
+          >
+            <span>{selectedChapter ? `Chapter ${chapterNumber}` : "Select a chapter"}</span>
+          </button>
+          <div className={`chapter-dropdown ${dropdownOpen ? "open" : ""}`}>
+            {chapters.map((chapter) => (
+              <div
+                key={chapter.id}
+                className={`chapter-dropdown-item ${selectedChapter?.id === chapter.id ? "active" : ""}`}
+                onClick={() => {
+                  if (loadChapter) loadChapter(chapter);
+                  setDropdownOpen(false);
+                }}
+              >
+                <div className="chapter-dropdown-title">{chapter.title}</div>
+                <div className="chapter-dropdown-meta">
+                  {(chapter.scenes?.length || 0)} scenes • {(chapter.beats?.length || 0)} beats
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {!selectedChapter ? (
         <div className="empty-state">
-          <div className="empty-icon">✨</div>
+          <div className="empty-icon">[doc]</div>
           <p className="empty-text">Select a chapter to begin</p>
         </div>
       ) : scenes.length === 0 && beats.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">✨</div>
+          <div className="empty-icon">[doc]</div>
           <p className="empty-text">No scenes or beats yet</p>
           <p className="empty-hint">Add a scene or a beat to start</p>
         </div>
