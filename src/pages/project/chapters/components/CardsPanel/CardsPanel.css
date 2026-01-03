@@ -1,0 +1,211 @@
+.panel-resizer {
+  width: 6px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.panel-resizer:hover,
+.panel-resizer.active {
+  background: var(--primary);
+}
+
+.cards-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.chapter-selector.inline {
+  position: relative;
+  width: 100%;
+}
+
+.chapter-selector.inline .chapter-dropdown {
+  display: none;
+}
+
+.chapter-selector.inline .chapter-dropdown.open {
+  display: block;
+}
+
+.chapter-selector.inline .chapter-dropdown-btn {
+  width: 100%;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fff8ed, #ffe4f0);
+  border: 1px solid #f5e3d8;
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-weight: 800;
+  color: #1f2937;
+  box-shadow: 0 12px 30px -22px rgba(0, 0, 0, 0.35);
+}
+
+.chapter-selector.inline .chapter-dropdown {
+  margin-top: 6px;
+  border-radius: 14px;
+  border: 1px solid #f1ded6;
+  box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.18);
+}
+
+.chapter-selector.inline .chapter-dropdown-item {
+  padding: 14px 16px;
+}
+
+.chapter-selector.inline .chapter-dropdown-item:hover {
+  background: #fff7ef;
+}
+
+.chapter-selector.inline .chapter-dropdown-item.active {
+  background: #fff3e0;
+  color: #f97316;
+}
+
+.cards-panel-header .view-toggle {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+/* ====================================
+   CARDS PANEL (Scene/Beat list)
+==================================== */
+.cards-panel {
+  background: rgb(255, 255, 255);
+  padding: 18px 18px 32px;
+  border-right: 1px solid #f2e8e6;
+  overflow-y: auto;
+  max-width: 380px;
+}
+
+.cards-panel .content-card {
+  margin-bottom: 16px;
+}
+
+.cards-panel .content-card:last-child {
+  margin-bottom: 0;
+}
+
+.cards-panel .empty-state {
+  text-align: center;
+  padding: 60px 12px;
+  color: #9ca3af;
+}
+
+.cards-panel .empty-icon {
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.cards-panel .empty-text {
+  font-weight: 700;
+  color: #111827;
+}
+
+.cards-panel .empty-hint {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.chapter-dropdown-btn {
+  background: linear-gradient(90deg, #fff8ed, #ffeefe);
+  border: 1px solid #f1ded6;
+  border-radius: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  box-shadow: 0 12px 30px -24px rgba(0, 0, 0, 0.35);
+}
+
+.chapter-dropdown {
+  border-color: #f1ded6;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.25);
+}
+
+.chapter-dropdown-item {
+  padding: 14px 16px;
+}
+
+.chapter-dropdown-item:hover {
+  background: #fff7ef;
+}
+
+.chapter-dropdown-item.active {
+  background: #fff3e0;
+  color: #f97316;
+}
+
+
+.view-toggle-btn.active {
+  background: #fb903d;
+    background: linear-gradient(148deg, #fb903d 0%, #f43f5e 50%);
+  color: #ffffff;
+  box-shadow: 0 10px 18px -14px rgba(239, 71, 111, 0.45);
+}
+
+.view-toggle-btn:not(.active):hover {
+  background: #fff6ef;
+  color: #1f2937;
+}
+
+.chapter-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.chapter-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.chapter-dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.chapter-dropdown-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.chapter-dropdown-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chapter-dropdown-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.view-toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s;
+background: #fb903d;
+background: linear-gradient(148deg, #fb903d 0%, #f43f5e 50%);
+}
+
+.nav-spacer {
+  flex: 1;
+}
+

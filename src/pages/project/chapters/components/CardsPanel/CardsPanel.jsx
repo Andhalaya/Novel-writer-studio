@@ -1,7 +1,9 @@
 ﻿import React, { useMemo, useState } from "react";
-import SceneSection from "./SceneSection/SceneSection";
-import BeatSection from "./BeatSection";
-import { getVersionLabel, getVersionOptions, getDisplayContent } from "../../../../utils/versionUtils";
+import SceneSection from "../SceneSection/SceneSection";
+import BeatSection from "../BeatSection/BeatSection";
+import { getVersionLabel, getVersionOptions, getDisplayContent } from "../../../../../utils/versionUtils";
+// import './CardsPanel.css'
+import './Panel1.css'
 
 export default function CardsPanel({
   style,

@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { useFirestore } from "../../../context/FirestoreContext";
 import LinkSelectorModal from "./components/LinkSelectorModal";
 import EditorPanel from "./components/EditorPanel/EditorPanel";
-import CardsPanel from "./components/CardsPanel";
+import CardsPanel from "./components/CardsPanel/CardsPanel";
 import TopNav from "./components/TopNav";
 import OutlineDrawer from "./components/OutlineDrawer/OutlineDrawer";
 import FloatingAddMenu from "./components/FloatingAddMenu";
